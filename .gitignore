@@ -134,3 +134,7 @@ dmypy.json
 
 /cache
 /logs
+
+/crazyflie-clients-python
+/crazyflie-lib-python
+.DS_Store
