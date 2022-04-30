@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 # import data in pandas dataframe (change the file name to your local file)
-data = pd.read_csv('logs/your_file_name.csv', header = None)
+data = pd.read_csv('logs/2022_04_30_11_08_49.csv', header = None)
 print(data)
 
 # remove all-zeros rows
