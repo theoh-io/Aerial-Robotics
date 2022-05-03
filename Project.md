@@ -16,7 +16,7 @@ commence par algo simple: aller /retours ou zigzag
 ### Detection capteur zranger
 Explore pour trouver l' objectif (box center)
 
-### land
+### Land
 
 
 ## Bounding box
@@ -24,7 +24,7 @@ on connait position départ et arène dim mais pas objectif
 
 ## Obstacle Avoidance
 
-### recuperer valeurs multirangers (capteurs cotés TOF)
+### Recuperer valeurs multirangers (capteurs cotés TOF)
 
 ### Algo de contournement
 
@@ -63,7 +63,7 @@ a améliorer ? problème probable ?
 
 also drift from takeoff and landing (yaw ~ 20 deg)
 
-### arena
+### Arena
 around 5x3m
 same cylinder shape
 
@@ -83,4 +83,3 @@ https://github.com/HKUST-Aerial-Robotics/Fast-Planner
 ---
 ## Repartition des taches
 
-### Am
