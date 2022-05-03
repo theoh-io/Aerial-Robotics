@@ -83,4 +83,4 @@ https://github.com/HKUST-Aerial-Robotics/Fast-Planner
 ---
 ## Repartition des taches
 
-### Amaelle
+### Am
