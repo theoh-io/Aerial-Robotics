@@ -15,6 +15,8 @@ URI = uri_helper.uri_from_env(default='radio://0/80/2M/E7E7E7E714')
 DEFAULT_HEIGHT = 0.5
 BOX_LIMIT = 0.5
 
+#test comment
+
 deck_attached_event = Event()
 
 logging.basicConfig(level=logging.ERROR)
