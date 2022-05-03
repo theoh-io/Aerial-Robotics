@@ -27,3 +27,6 @@ on connait position départ et arène dim mais pas objectif
 ### recuperer valeurs multirangers (capteurs cotés TOF)
 
 ### Algo de contournement
+
+## Team
+Amaëlle Bidet, Theo Hermamm, Karim Zahra, Camille Guillaume
