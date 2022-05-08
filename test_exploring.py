@@ -46,7 +46,7 @@ URI = uri_helper.uri_from_env(default='radio://0/80/2M/E7E7E7E714')
 # Only output errors from the logging framework
 logging.basicConfig(level=logging.ERROR)
 
-def zigzag(width, height, offset):
+def zigzag_blocking(width, height, offset):
     ##zigzaging
     xlimit=width
     ylimit=height
@@ -61,6 +61,21 @@ def zigzag(width, height, offset):
         mc.left(xlimit/2)
         print(i)
 
+def zigzag_nonblocking(width,height, offset):
+    ##zigzaging
+    xlimit=width
+    ylimit=height
+    y_offset=offset
+    nb_offset=int(ylimit/(2*y_offset))
+    print(nb_offset)
+    for i in range(nb_offset):
+        mc.start_left(xlimit/2)
+        mc.start_forward(y_offset)
+        mc.start_right(xlimit)
+        mc.start_forward(y_offset)
+        mc.start_left(xlimit/2)
+        print(i)
+
 
 if __name__ == '__main__':
     # Initialize the low-level drivers
@@ -71,33 +86,12 @@ if __name__ == '__main__':
         with MotionCommander(scf) as mc:
             time.sleep(1)
 
-            # There is a set of functions that move a specific distance
-            # We can move in all directions
-            ##zigzaging
-            zigzag(0.2, 1, 0.1)
-            mc.land()
-
-            # We can also set the velocity
-            mc.right(0.5, velocity=0.8)
-            time.sleep(1)
-            mc.left(0.5, velocity=0.4)
-            time.sleep(1)
-
-            # We can do circles or parts of circles
-            mc.circle_right(0.5, velocity=0.5, angle_degrees=180)
-
-            # Or turn
-            mc.turn_left(90)
-            time.sleep(1)
-
-            # We can move along a line in 3D space
-            mc.move_distance(-1, 0.0, 0.5, velocity=0.6)
-            time.sleep(1)
-
+            #zigzag_blocking(0.5, 0.8, 0.1)
+            zigzag_nonblocking(0.5, 0.8, 0.1)
             # There is also a set of functions that start a motion. The
             # Crazyflie will keep on going until it gets a new command.
 
-            mc.start_left(velocity=0.5)
+            #mc.start_left(velocity=0.5)
             # The motion is started and we can do other stuff, printing for
             # instance
             for _ in range(5):
