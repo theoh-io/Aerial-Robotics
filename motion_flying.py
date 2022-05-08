@@ -12,11 +12,13 @@ from cflib.utils import uri_helper
 
 URI = uri_helper.uri_from_env(default='radio://0/80/2M/E7E7E7E714')
 
-DEFAULT_HEIGHT = 0.5
-BOX_LIMIT = 0.5
-
-#test comment
-
+# Unit: meter
+DEFAULT_HEIGHT = 1 #1
+BOX_LIMIT_X = 5 #5
+BOX_LIMIT_Y = 3 #3
+START_POS_X = 0
+START_POS_Y = 0
+START_EXPLORE_X = 3.5-START_POS_X
 deck_attached_event = Event()
 
 logging.basicConfig(level=logging.ERROR)
@@ -64,13 +66,13 @@ def move_box_limit(scf):
         max_vel = 0.2
 
         while (1):
-            if position_estimate[0] > BOX_LIMIT:
-                 body_x_cmd=-max_vel
-            elif position_estimate[0] < -BOX_LIMIT:
+            if position_estimate[0] > BOX_LIMIT_X-START_POS_X:
+                body_x_cmd=-max_vel
+            elif position_estimate[0] < -START_POS_X:
                 body_x_cmd=max_vel
-            if position_estimate[1] > BOX_LIMIT:
+            if position_estimate[1] > BOX_LIMIT_Y-START_POS_Y:
                 body_y_cmd=-max_vel
-            elif position_estimate[1] < -BOX_LIMIT:
+            elif position_estimate[1] < -START_POS_Y:
                 body_y_cmd=max_vel
 
             mc.start_linear_motion(body_x_cmd, body_y_cmd, 0)
