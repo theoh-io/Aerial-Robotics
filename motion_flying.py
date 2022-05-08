@@ -2,6 +2,7 @@ import logging
 import sys
 import time
 from threading import Event
+import math
 
 import cflib.crtp
 from cflib.crazyflie import Crazyflie
@@ -14,11 +15,13 @@ URI = uri_helper.uri_from_env(default='radio://0/80/2M/E7E7E7E714')
 
 # Unit: meter
 DEFAULT_HEIGHT = 1 #1
-BOX_LIMIT_X = 5 #5
-BOX_LIMIT_Y = 3 #3
+FOV_ZRANGER=math.radians(2.1)
+BOX_LIMIT_X = 1.5 #5
+BOX_LIMIT_Y = 1 #3
 START_POS_X = 0
-START_POS_Y = 0
-START_EXPLORE_X = 3.5-START_POS_X
+START_POS_Y = 0.8
+GOAL_ZONE_X=1
+START_EXPLORE_X = GOAL_ZONE_X-START_POS_X
 deck_attached_event = Event()
 
 logging.basicConfig(level=logging.ERROR)
@@ -79,6 +82,39 @@ def move_box_limit(scf):
 
             time.sleep(0.1)
 
+
+def zigzag_nonblocking():
+    global case, x_offset
+    if case==-1:
+        mc.start_forward()
+        case =0
+    if (case==0 and position_estimate[0]>START_EXPLORE_X) or case ==4:
+        mc.start_left()
+        case=1
+    elif case==1 and position_estimate[1] > BOX_LIMIT_Y-START_POS_Y:
+        print("!!!!!!!!!!!!reached bbox")
+        mc.forward(x_offset)
+        case=2
+    elif case == 2:
+        mc.start_right()
+        case = 3
+    elif case == 3 and  position_estimate[1] < -START_POS_Y:
+        mc.forward(x_offset)
+        case=4
+    if position_estimate[0] > BOX_LIMIT_X - START_POS_X:
+        mc.land()
+
+def compute_offset():
+    offset=math.tan(FOV_ZRANGER)/DEFAULT_HEIGHT
+    print(offset)
+    return offset
+
+    
+    
+
+
+#def FSM():
+
 if __name__ == '__main__':
 
     cflib.crtp.init_drivers()
@@ -102,7 +138,18 @@ if __name__ == '__main__':
         #start logging
         logconf.start()
 
-        move_box_limit(scf)
+        with MotionCommander(scf, default_height=DEFAULT_HEIGHT) as mc:
+            time.sleep(1)
+            case=-1
+            x_offset=0.25#compute_offset()
+            #mc.start_forward()
+            while(1):
+                zigzag_nonblocking()
+                time.sleep(1)
+                #TO BE ADDED
+                #if(is_close()):
+                #    obstacle avoidance();
+                #if bbox intersection => case +=1
 
         #stop logging
         logconf.stop()
