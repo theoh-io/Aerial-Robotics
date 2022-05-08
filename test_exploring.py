@@ -87,7 +87,9 @@ if __name__ == '__main__':
             time.sleep(1)
 
             #zigzag_blocking(0.5, 0.8, 0.1)
-            zigzag_nonblocking(0.5, 0.8, 0.1)
+            while(1):
+                zigzag_nonblocking(0.5, 0.8, 0.1)
+                print("in the while")
             # There is also a set of functions that start a motion. The
             # Crazyflie will keep on going until it gets a new command.
 
