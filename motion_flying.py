@@ -15,7 +15,7 @@ from cflib.utils.multiranger import Multiranger
 URI = uri_helper.uri_from_env(default='radio://0/80/2M/E7E7E7E714')
 
 # Unit: meter
-DEFAULT_HEIGHT = 1 #1
+DEFAULT_HEIGHT = 0.2 #1
 FOV_ZRANGER=math.radians(2.1)
 BOX_LIMIT_X = 1.5 #5
 BOX_LIMIT_Y = 1 #3
@@ -110,6 +110,14 @@ def compute_offset():
     print(offset)
     return offset
 
+
+def is_close(range):
+    MIN_DISTANCE = 0.3  # m
+
+    if range is None:
+        return False
+    else:
+        return range < MIN_DISTANCE
     
     
 
@@ -140,30 +148,12 @@ if __name__ == '__main__':
         logconf.start()
 
         with MotionCommander(scf, default_height=DEFAULT_HEIGHT) as mc:
-            time.sleep(1)
-            case=-1
-            x_offset=0.25#compute_offset()
-            #mc.start_forward()
-            while(1):
-                zigzag_nonblocking()
-                time.sleep(1)
-                #TO BE ADDED
-                #if(is_close()):
-                #    obstacle avoidance();
-                #if bbox intersection => case +=1
-
-        #stop logging
-        logconf.stop()
-
-
-                with MotionCommander(scf) as mc:
             with Multiranger(scf) as multiranger:
-                # move_box_limit(scf)
                 keep_flying = True
                 avoided = 0
 
                 while keep_flying:
-                    VELOCITY = 0.5
+                    VELOCITY = 0.2
                     velocity_x = 0.0
                     velocity_y = VELOCITY
 
@@ -211,3 +201,5 @@ if __name__ == '__main__':
                         velocity_x, velocity_y, 0)
 
                     time.sleep(0.1)
+        #stop logging
+        logconf.stop()
