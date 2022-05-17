@@ -14,14 +14,17 @@ from cflib.utils import uri_helper
 URI = uri_helper.uri_from_env(default='radio://0/80/2M/E7E7E7E714')
 
 # Unit: meter
-DEFAULT_HEIGHT = 1 #1
+DEFAULT_HEIGHT = 0.5 #1
 FOV_ZRANGER=math.radians(2.1)
-BOX_LIMIT_X = 1.5 #5
-BOX_LIMIT_Y = 1 #3
+BOX_LIMIT_X = 1 #5
+BOX_LIMIT_Y = 0.5 #3
 START_POS_X = 0
-START_POS_Y = 0.8
-GOAL_ZONE_X=1
+START_POS_Y = 0
+GOAL_ZONE_X=0.1
 START_EXPLORE_X = GOAL_ZONE_X-START_POS_X
+
+TIME_EXPLORE= 3
+
 deck_attached_event = Event()
 
 logging.basicConfig(level=logging.ERROR)
@@ -50,7 +53,7 @@ def move_linear_simple(scf):
         time.sleep(1)
 
 def log_pos_callback(timestamp, data, logconf):
-    print(data)
+    #print(data)
     global position_estimate
     position_estimate[0] = data['stateEstimate.x']
     position_estimate[1] = data['stateEstimate.y']
@@ -84,7 +87,9 @@ def move_box_limit(scf):
 
 
 def zigzag_nonblocking():
-    global case, x_offset
+    global case, x_offset 
+    #to test way_back
+    global start_time, goal_x, goal_y
     if case==-1:
         mc.start_forward()
         case =0
@@ -103,6 +108,23 @@ def zigzag_nonblocking():
         case=4
     if position_estimate[0] > BOX_LIMIT_X - START_POS_X:
         mc.land()
+    #just to test the way back
+    if(time.time()-start_time>TIME_EXPLORE):
+        mc.land()
+        goal_x=position_estimate[0]
+        goal_y=position_estimate[1]
+        mc.take_off(DEFAULT_HEIGHT)
+        case =5 #to get out of zigzag
+
+def go_back():
+    global goal_x, goal_y
+    #first goes to 0 in x
+    dist_x=goal_x
+    mc.back(dist_x)
+    #goes to 0 in y
+    dist_y=goal_y
+    mc.right(dist_y)
+    mc.land()
 
 def compute_offset():
     offset=math.tan(FOV_ZRANGER)/DEFAULT_HEIGHT
@@ -140,11 +162,21 @@ if __name__ == '__main__':
 
         with MotionCommander(scf, default_height=DEFAULT_HEIGHT) as mc:
             time.sleep(1)
+            #test way back
+            start_time=time.time()
+            print(start_time)
+            goal_x=0
+            goal_y=0
+
             case=-1
             x_offset=0.25#compute_offset()
             #mc.start_forward()
             while(1):
-                zigzag_nonblocking()
+                print(time.time()-start_time)
+                if case != 5:
+                    zigzag_nonblocking()
+                else:
+                    go_back()
                 time.sleep(1)
                 #TO BE ADDED
                 #if(is_close()):
