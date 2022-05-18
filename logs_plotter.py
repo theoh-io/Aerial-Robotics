@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 # import data in pandas dataframe (change the file name to your local file)
-data = pd.read_csv('logs/2022_04_30_11_08_49.csv', header = None)
+data = pd.read_csv('logs/2022_05_17_18_59_52.csv', header = None)
 print(data)
 
 # remove all-zeros rows
@@ -13,4 +13,5 @@ print(data)
 plt.figure()
 for i in data:
     data[i].plot()
+    print(i)
 plt.show()

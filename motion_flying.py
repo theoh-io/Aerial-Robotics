@@ -26,7 +26,7 @@ deck_attached_event = Event()
 
 logging.basicConfig(level=logging.ERROR)
 
-position_estimate = [0, 0]
+position_estimate = [0, 0, 0]
 
 def param_deck_flow(_, value_str):
     value = int(value_str) #conversion str to int
@@ -54,6 +54,8 @@ def log_pos_callback(timestamp, data, logconf):
     global position_estimate
     position_estimate[0] = data['stateEstimate.x']
     position_estimate[1] = data['stateEstimate.y']
+    position_estimate[2] = data['stateEstimate.z']
+
 
 def take_off_simple(scf):
     with MotionCommander(scf, default_height=DEFAULT_HEIGHT) as mc:
@@ -132,6 +134,7 @@ if __name__ == '__main__':
         logconf = LogConfig(name='Position', period_in_ms=10)
         logconf.add_variable('stateEstimate.x', 'float')
         logconf.add_variable('stateEstimate.y', 'float')
+        logconf.add_variable('stateEstimate.z', 'float')
         scf.cf.log.add_config(logconf)
         logconf.data_received_cb.add_callback(log_pos_callback)
 
