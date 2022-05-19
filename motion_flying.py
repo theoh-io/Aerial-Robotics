@@ -23,13 +23,16 @@ START_POS_Y = 0
 GOAL_ZONE_X=0.1
 START_EXPLORE_X = GOAL_ZONE_X-START_POS_X
 
-TIME_EXPLORE= 3
+TIME_EXPLORE= 5
+
+#to be added in parser
+verbose = True
 
 deck_attached_event = Event()
 
 logging.basicConfig(level=logging.ERROR)
 
-position_estimate = [0, 0]
+position_estimate = [0, 0, 0]
 
 def param_deck_flow(_, value_str):
     value = int(value_str) #conversion str to int
@@ -57,6 +60,8 @@ def log_pos_callback(timestamp, data, logconf):
     global position_estimate
     position_estimate[0] = data['stateEstimate.x']
     position_estimate[1] = data['stateEstimate.y']
+    position_estimate[2] = data['stateEstimate.yaw']
+
 
 def take_off_simple(scf):
     with MotionCommander(scf, default_height=DEFAULT_HEIGHT) as mc:
@@ -87,7 +92,7 @@ def move_box_limit(scf):
 
 
 def zigzag_nonblocking():
-    global case, x_offset 
+    global case, x_offset, yaw_landing
     #to test way_back
     global start_time, goal_x, goal_y
     if case==-1:
@@ -110,10 +115,12 @@ def zigzag_nonblocking():
         mc.land()
     #just to test the way back
     if(time.time()-start_time>TIME_EXPLORE):
+        yaw_landing=position_estimate[2]
         mc.land()
         goal_x=position_estimate[0]
         goal_y=position_estimate[1]
         mc.take_off(DEFAULT_HEIGHT)
+        time.sleep(1)
         case =5 #to get out of zigzag
 
 def go_back():
@@ -131,7 +138,26 @@ def compute_offset():
     print(offset)
     return offset
 
-    
+def clean_takeoff(mc): 
+    time.sleep(1)
+    mc._reset_position_estimator()
+    time.sleep(1)
+    init_x = position_estimate[0]
+    init_y = position_estimate[1]
+    init_yaw = position_estimate[2]
+    print("Start pos:",START_POS_X+position_estimate[0]-init_x,START_POS_Y+position_estimate[1]-init_y)
+    print("Start yaw:", position_estimate[2]-init_yaw)
+    time.sleep(3)
+    regulate_yaw(mc, init_yaw, position_estimate[2])
+    return init_x, init_y, init_yaw
+
+# regulate yaw to init angle
+def regulate_yaw(mc, init_yaw, curr_yaw):
+    print("in regulate yaw")
+    if init_yaw - curr_yaw >= 0:
+        mc.turn_left(init_yaw - curr_yaw)
+    if init_yaw - curr_yaw < 0:
+        mc.turn_right(curr_yaw - init_yaw)
     
 
 
@@ -154,6 +180,7 @@ if __name__ == '__main__':
         logconf = LogConfig(name='Position', period_in_ms=10)
         logconf.add_variable('stateEstimate.x', 'float')
         logconf.add_variable('stateEstimate.y', 'float')
+        logconf.add_variable('stateEstimate.yaw', 'float')
         scf.cf.log.add_config(logconf)
         logconf.data_received_cb.add_callback(log_pos_callback)
 
@@ -161,6 +188,7 @@ if __name__ == '__main__':
         logconf.start()
 
         with MotionCommander(scf, default_height=DEFAULT_HEIGHT) as mc:
+
             time.sleep(1)
             #test way back
             start_time=time.time()
@@ -168,6 +196,7 @@ if __name__ == '__main__':
             goal_x=0
             goal_y=0
 
+            #init_x, init_y, init_yaw = clean_takeoff(mc)
             case=-1
             x_offset=0.25#compute_offset()
             #mc.start_forward()
@@ -176,6 +205,7 @@ if __name__ == '__main__':
                 if case != 5:
                     zigzag_nonblocking()
                 else:
+                    regulate_yaw(mc, yaw_landing, position_estimate[2]) #compensate the error in yaw during landing
                     go_back()
                 time.sleep(1)
                 #TO BE ADDED
