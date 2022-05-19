@@ -10,6 +10,7 @@ from cflib.crazyflie.log import LogConfig
 from cflib.crazyflie.syncCrazyflie import SyncCrazyflie
 from cflib.positioning.motion_commander import MotionCommander
 from cflib.utils import uri_helper
+from cflib.utils.multiranger import Multiranger
 
 URI = uri_helper.uri_from_env(default='radio://0/80/2M/E7E7E7E714')
 
@@ -32,7 +33,7 @@ deck_attached_event = Event()
 
 logging.basicConfig(level=logging.ERROR)
 
-position_estimate = [0, 0, 0]
+position_estimate = [0, 0, 0, 0]
 
 def param_deck_flow(_, value_str):
     value = int(value_str) #conversion str to int
@@ -159,10 +160,21 @@ def regulate_yaw(mc, init_yaw, curr_yaw):
         mc.turn_left(init_yaw - curr_yaw)
     if init_yaw - curr_yaw < 0:
         mc.turn_right(curr_yaw - init_yaw)
-    
 
+def obstacle_avoidance():
+    if is_close(multiranger.left):
+        pos_estimate_before = position_estimate[0]
+        velocity_y = 0.0
+        velocity_x =  + VELOCITY
 
-#def FSM():
+    if is_close(multiranger.back):
+            avoided = 1
+    else:
+        if (avoided):
+            velocity_y = 0
+            velocity_x = - VELOCITY
+            if (position_estimate[0] < abs(pos_estimate_before + 0.01)):
+
 
 if __name__ == '__main__':
 
@@ -190,30 +202,31 @@ if __name__ == '__main__':
         logconf.start()
 
         with MotionCommander(scf, default_height=DEFAULT_HEIGHT) as mc:
-
+            #little sleep needed for takeoff
             time.sleep(1)
-            #test way back
+            #variables used for the wayback test based on time
             start_time=time.time()
             print(start_time)
             goal_x=0
             goal_y=0
-
-            #init_x, init_y, init_yaw = clean_takeoff(mc)
+            #variables needed for zigzag
             case=-1
             x_offset=0.25#compute_offset()
-            #mc.start_forward()
+            #variables needed for obstacle avoidance
+            avoided = 0
+            VELOCITY = 0.2
+            # velocity_x = 0.0
+            # velocity_y = VELOCITY
+
             while(1):
                 print(time.time()-start_time)
+                obstacle_avoidance()
                 if case != 5:
                     zigzag_nonblocking()
                 else:
                     regulate_yaw(mc, yaw_landing, position_estimate[2]) #compensate the error in yaw during landing
                     go_back()
                 time.sleep(1)
-                #TO BE ADDED
-                #if(is_close()):
-                #    obstacle avoidance();
-                #if bbox intersection => case +=1
-
+                
         #stop logging
         logconf.stop()
