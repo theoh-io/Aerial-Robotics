@@ -9,16 +9,23 @@ Created on Sun May  8 16:52:23 2022
 import logging
 import time
 from threading import Event
+from threading import Timer
 import math
+import datetime as dt
 
 import cflib.crtp
 from cflib.crazyflie import Crazyflie
 from cflib.crazyflie.syncCrazyflie import SyncCrazyflie
+from cflib.crazyflie.syncLogger import SyncLogger
 from cflib.positioning.motion_commander import MotionCommander
 from cflib.positioning.position_hl_commander import PositionHlCommander
 from cflib.utils import uri_helper
 from cflib.utils.multiranger import Multiranger
 from cflib.crazyflie.log import LogConfig
+
+import numpy as np
+import os
+
 
 
 URI = uri_helper.uri_from_env(default='radio://0/80/2M/E7E7E7E714')
@@ -29,6 +36,8 @@ deck_attached_event = Event()
 logging.basicConfig(level=logging.ERROR)
 
 position_estimate = [0, 0, 0, 0]
+logs = np.zeros([100000,4])
+count = 0
 
 def is_edge(z_1,z_2):
     MIN_EDGE = 0.05  # m
@@ -54,7 +63,16 @@ def log_pos_callback(timestamp, data, logconf):
     position_estimate[2] = data['stateEstimate.z']
     position_estimate[3] = data['range.zrange']
 
+def _stab_log_data(timestamp, data, logconf):
+    """Callback froma the log API when data arrives"""
+    print('[%d][%s]: %s' % (timestamp, logconf.name, data))
     
+    # Save info into log variable
+    for idx, i in enumerate(list(data)):
+        logs[count][idx] = data[i]
+    count += 1
+
+
 if __name__ == '__main__':
     # Initialize the low-level drivers
     cflib.crtp.init_drivers()
@@ -69,15 +87,15 @@ if __name__ == '__main__':
         #if not deck_attached_event.wait(timeout=5):
         #   print('No flow deck detected!')
         #  sys.exit(1)
-        
+
         logconf = LogConfig(name='Position', period_in_ms=10)
         logconf.add_variable('stateEstimate.x', 'float')
         logconf.add_variable('stateEstimate.y', 'float')
         logconf.add_variable('stateEstimate.z', 'float')
-        logconf.add_variable('stateEstimate.z', 'float')
         logconf.add_variable('range.zrange', 'uint16_t')
         scf.cf.log.add_config(logconf)
         logconf.data_received_cb.add_callback(log_pos_callback)
+        logconf.data_received_cb.add_callback(_stab_log_data)
 
         #start logging
         logconf.start()
@@ -116,10 +134,18 @@ if __name__ == '__main__':
                     
                     if is_close(multiranger.up):
                         keep_flying = False
+                    
                     time.sleep(0.1)
 
             mc.stop()
 
         #stop logging
         logconf.stop()
-        
+
+        # Get timestamp
+        filename = dt.datetime.now().strftime("%Y_%m_%d_%H_%M_%S.csv")
+        # Save log to file
+        if not os.path.exists('logs'):
+            os.makedirs('logs')
+        filepath = os.path.join(os.getcwd(),'logs',filename)
+        np.savetxt(filepath, logs, delimiter=',')

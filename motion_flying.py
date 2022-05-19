@@ -60,7 +60,8 @@ def log_pos_callback(timestamp, data, logconf):
     global position_estimate
     position_estimate[0] = data['stateEstimate.x']
     position_estimate[1] = data['stateEstimate.y']
-    position_estimate[2] = data['stateEstimate.yaw']
+    position_estimate[2] = data['stateEstimate.z']
+    position_estimate[3] = data['stateEstimate.yaw']
 
 
 def take_off_simple(scf):
@@ -144,11 +145,11 @@ def clean_takeoff(mc):
     time.sleep(1)
     init_x = position_estimate[0]
     init_y = position_estimate[1]
-    init_yaw = position_estimate[2]
+    init_yaw = position_estimate[3]
     print("Start pos:",START_POS_X+position_estimate[0]-init_x,START_POS_Y+position_estimate[1]-init_y)
-    print("Start yaw:", position_estimate[2]-init_yaw)
+    print("Start yaw:", position_estimate[3]-init_yaw)
     time.sleep(3)
-    regulate_yaw(mc, init_yaw, position_estimate[2])
+    regulate_yaw(mc, init_yaw, position_estimate[3])
     return init_x, init_y, init_yaw
 
 # regulate yaw to init angle
@@ -180,6 +181,7 @@ if __name__ == '__main__':
         logconf = LogConfig(name='Position', period_in_ms=10)
         logconf.add_variable('stateEstimate.x', 'float')
         logconf.add_variable('stateEstimate.y', 'float')
+        logconf.add_variable('stateEstimate.z', 'float')
         logconf.add_variable('stateEstimate.yaw', 'float')
         scf.cf.log.add_config(logconf)
         logconf.data_received_cb.add_callback(log_pos_callback)
