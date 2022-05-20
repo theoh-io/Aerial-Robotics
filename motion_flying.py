@@ -184,21 +184,22 @@ def obstacle_avoidance():
         avoided_left = 1
         return True
 
-    if (avoided_left ==1):
-        velocity_x = 0.0
-        velocity_y = VELOCITY
-        return True
-        
     if is_close(multiranger.back):
         print("object behind")
         avoided = 1
         return True
 
+    if (avoided_left ==1 & avoided == 0):
+        velocity_x = 0.0
+        velocity_y = VELOCITY
+        return True
+        
     if (avoided):
         velocity_y = 0
         velocity_x = - VELOCITY
         if (position_estimate[0] < abs(pos_estimate_before + 0.01)):
             avoided = 0
+            avoided_left = 0
             return False
         return True  #check this indent
 
