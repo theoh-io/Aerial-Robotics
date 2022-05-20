@@ -175,19 +175,24 @@ def is_close(range):
 
 def obstacle_avoidance():
     global velocity_x, velocity_y, avoided, pos_estimate_before
-    if is_close(multiranger.left):
+
+    if is_close(multiranger.left):  
         print("object detected on the left")
         pos_estimate_before = position_estimate[0]
         velocity_y = 0.0
         velocity_x = VELOCITY
+        avoided_left = 1
+        return True
+
+    if (avoided_left ==1):
+        velocity_x = 0.0
+        velocity_y = VELOCITY
         return True
         
     if is_close(multiranger.back):
-            print("object behind")
-            avoided = 1
-            velocity_y = 0.0
-            velocity_x = VELOCITY
-            return True
+        print("object behind")
+        avoided = 1
+        return True
 
     if (avoided):
         velocity_y = 0
@@ -196,6 +201,7 @@ def obstacle_avoidance():
             avoided = 0
             return False
         return True  #check this indent
+
     return False
 
 
@@ -239,8 +245,6 @@ if __name__ == '__main__':
                 #variables needed for obstacle avoidance
                 avoided = 0
                 VELOCITY = 0.2
-                velocity_x = 0.0
-                velocity_y = VELOCITY
                 pos_estimate_before = 0
                 yaw_landing=0
 
