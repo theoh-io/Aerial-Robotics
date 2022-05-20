@@ -174,7 +174,7 @@ def is_close(range):
         return range < MIN_DISTANCE
 
 def obstacle_avoidance():
-    global velocity_x, velocity_y, avoided
+    global velocity_x, velocity_y, avoided, pos_estimate_before
     if is_close(multiranger.left):
         print("object detected on the left")
         pos_estimate_before = position_estimate[0]
@@ -185,6 +185,8 @@ def obstacle_avoidance():
     if is_close(multiranger.back):
             print("object behind")
             avoided = 1
+            velocity_y = 0.0
+            velocity_x = VELOCITY
             return True
 
     if (avoided):
