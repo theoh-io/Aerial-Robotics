@@ -25,7 +25,7 @@ START_POS_Y = 0
 GOAL_ZONE_X=0.5
 START_EXPLORE_X = GOAL_ZONE_X-START_POS_X
 
-TIME_EXPLORE= 50
+TIME_EXPLORE= 25
 
 
 #to be added in parser
@@ -121,6 +121,7 @@ def zigzag_nonblocking():
     if(time.time()-start_time>TIME_EXPLORE):
         print(" Exploration time exceeded")
         yaw_landing=position_estimate[2]
+        print("yaw during landing", yaw_landing)
         mc.land()
         goal_x=position_estimate[0]
         goal_y=position_estimate[1]
@@ -239,6 +240,7 @@ if __name__ == '__main__':
                 velocity_x = 0.0
                 velocity_y = VELOCITY
                 pos_estimate_before = 0
+                yaw_landing=0
 
                 while(1):
                     if (obstacle_avoidance() == False):
@@ -246,7 +248,8 @@ if __name__ == '__main__':
                         if case != 5:
                             zigzag_nonblocking()
                         else:
-                            #regulate_yaw(mc, yaw_landing, position_estimate[2]) #compensate the error in yaw during landing
+                            regulate_yaw(mc, yaw_landing, position_estimate[2]) #compensate the error in yaw during landing
+                            print("yaw after regulate:", position_estimate[3])
                             go_back()
                         time.sleep(1)
                     else:
