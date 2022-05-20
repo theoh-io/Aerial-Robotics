@@ -238,10 +238,9 @@ if __name__ == '__main__':
                 VELOCITY = 0.2
                 velocity_x = 0.0
                 velocity_y = VELOCITY
+                pos_estimate_before = 0
 
                 while(1):
-                    #print(time.time()-start_time)
-
                     if (obstacle_avoidance() == False):
                         #if no obstacle is being detected let zigzag manage the speeds
                         if case != 5:
@@ -257,3 +256,5 @@ if __name__ == '__main__':
                         
         #stop logging
         logconf.stop()
+
+        
