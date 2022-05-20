@@ -16,16 +16,17 @@ from cflib.utils.multiranger import Multiranger
 URI = uri_helper.uri_from_env(default='radio://0/80/2M/E7E7E7E714')
 
 # Unit: meter
-DEFAULT_HEIGHT = 0.5 #1
+DEFAULT_HEIGHT = 0.25 #1
 FOV_ZRANGER=math.radians(2.1)
-BOX_LIMIT_X = 1 #5
-BOX_LIMIT_Y = 0.5 #3
+BOX_LIMIT_X = 2 #5
+BOX_LIMIT_Y = 1 #3
 START_POS_X = 0
 START_POS_Y = 0
-GOAL_ZONE_X=0.1
+GOAL_ZONE_X=0.5
 START_EXPLORE_X = GOAL_ZONE_X-START_POS_X
 
-TIME_EXPLORE= 5
+TIME_EXPLORE= 50
+
 
 #to be added in parser
 verbose = True
@@ -118,6 +119,7 @@ def zigzag_nonblocking():
         mc.land()
     #just to test the way back
     if(time.time()-start_time>TIME_EXPLORE):
+        print(" Exploration time exceeded")
         yaw_landing=position_estimate[2]
         mc.land()
         goal_x=position_estimate[0]
@@ -171,13 +173,16 @@ def is_close(range):
         return range < MIN_DISTANCE
 
 def obstacle_avoidance():
+    global velocity_x, velocity_y, avoided
     if is_close(multiranger.left):
+        print("object detected on the left")
         pos_estimate_before = position_estimate[0]
         velocity_y = 0.0
-        velocity_x =  + VELOCITY
+        velocity_x = VELOCITY
         return True
         
     if is_close(multiranger.back):
+            print("object behind")
             avoided = 1
             return True
 
@@ -186,8 +191,9 @@ def obstacle_avoidance():
         velocity_x = - VELOCITY
         if (position_estimate[0] < abs(pos_estimate_before + 0.01)):
             avoided = 0
-            return FALSE
-    return True
+            return False
+        return True  #check this indent
+    return False
 
 
 if __name__ == '__main__':
@@ -226,7 +232,7 @@ if __name__ == '__main__':
                 goal_y=0
                 #variables needed for zigzag
                 case=-1
-                x_offset=0.25#compute_offset()
+                x_offset=0.25#compute_offset() test with 30cm
                 #variables needed for obstacle avoidance
                 avoided = 0
                 VELOCITY = 0.2
@@ -234,15 +240,19 @@ if __name__ == '__main__':
                 velocity_y = VELOCITY
 
                 while(1):
-                    print(time.time()-start_time)
+                    #print(time.time()-start_time)
+
                     if (obstacle_avoidance() == False):
+                        #if no obstacle is being detected let zigzag manage the speeds
                         if case != 5:
                             zigzag_nonblocking()
                         else:
-                            regulate_yaw(mc, yaw_landing, position_estimate[2]) #compensate the error in yaw during landing
+                            #regulate_yaw(mc, yaw_landing, position_estimate[2]) #compensate the error in yaw during landing
                             go_back()
                         time.sleep(1)
                     else:
+                        print("obstacle av = True")
+                        #obstacle detected then gives manually the speeds defined by obstacle avoidance
                         mc.start_linear_motion(velocity_x, velocity_y, 0)
                         
         #stop logging
