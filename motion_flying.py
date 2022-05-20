@@ -1,4 +1,5 @@
 import logging
+from pickle import FALSE
 import sys
 import time
 from threading import Event
@@ -161,19 +162,32 @@ def regulate_yaw(mc, init_yaw, curr_yaw):
     if init_yaw - curr_yaw < 0:
         mc.turn_right(curr_yaw - init_yaw)
 
+def is_close(range):
+    MIN_DISTANCE = 0.2  # m
+
+    if range is None:
+        return False
+    else:
+        return range < MIN_DISTANCE
+
 def obstacle_avoidance():
     if is_close(multiranger.left):
         pos_estimate_before = position_estimate[0]
         velocity_y = 0.0
         velocity_x =  + VELOCITY
-
+        return True
+        
     if is_close(multiranger.back):
             avoided = 1
-    else:
-        if (avoided):
-            velocity_y = 0
-            velocity_x = - VELOCITY
-            if (position_estimate[0] < abs(pos_estimate_before + 0.01)):
+            return True
+
+    if (avoided):
+        velocity_y = 0
+        velocity_x = - VELOCITY
+        if (position_estimate[0] < abs(pos_estimate_before + 0.01)):
+            avoided = 0
+            return FALSE
+    return True
 
 
 if __name__ == '__main__':
@@ -202,31 +216,34 @@ if __name__ == '__main__':
         logconf.start()
 
         with MotionCommander(scf, default_height=DEFAULT_HEIGHT) as mc:
-            #little sleep needed for takeoff
-            time.sleep(1)
-            #variables used for the wayback test based on time
-            start_time=time.time()
-            print(start_time)
-            goal_x=0
-            goal_y=0
-            #variables needed for zigzag
-            case=-1
-            x_offset=0.25#compute_offset()
-            #variables needed for obstacle avoidance
-            avoided = 0
-            VELOCITY = 0.2
-            # velocity_x = 0.0
-            # velocity_y = VELOCITY
-
-            while(1):
-                print(time.time()-start_time)
-                obstacle_avoidance()
-                if case != 5:
-                    zigzag_nonblocking()
-                else:
-                    regulate_yaw(mc, yaw_landing, position_estimate[2]) #compensate the error in yaw during landing
-                    go_back()
+            with Multiranger(scf) as multiranger:
+                #little sleep needed for takeoff
                 time.sleep(1)
-                
+                #variables used for the wayback test based on time
+                start_time=time.time()
+                print(start_time)
+                goal_x=0
+                goal_y=0
+                #variables needed for zigzag
+                case=-1
+                x_offset=0.25#compute_offset()
+                #variables needed for obstacle avoidance
+                avoided = 0
+                VELOCITY = 0.2
+                velocity_x = 0.0
+                velocity_y = VELOCITY
+
+                while(1):
+                    print(time.time()-start_time)
+                    if (obstacle_avoidance() == False):
+                        if case != 5:
+                            zigzag_nonblocking()
+                        else:
+                            regulate_yaw(mc, yaw_landing, position_estimate[2]) #compensate the error in yaw during landing
+                            go_back()
+                        time.sleep(1)
+                    else:
+                        mc.start_linear_motion(velocity_x, velocity_y, 0)
+                        
         #stop logging
         logconf.stop()
