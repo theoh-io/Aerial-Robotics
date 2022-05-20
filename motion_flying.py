@@ -232,10 +232,11 @@ if __name__ == '__main__':
                 VELOCITY = 0.2
                 velocity_x = 0.0
                 velocity_y = VELOCITY
+                pos_estimate_before = 0
 
                 while(1):
                     print(time.time()-start_time)
-                    if (obstacle_avoidance() == False):
+                    if (obstacle_avoidance() == False): #Pour le moment evite juste les obstacles a gauche quand le drone a une vitesse y +
                         if case != 5:
                             zigzag_nonblocking()
                         else:
@@ -247,3 +248,5 @@ if __name__ == '__main__':
                         
         #stop logging
         logconf.stop()
+
+        
