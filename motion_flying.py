@@ -18,8 +18,8 @@ URI = uri_helper.uri_from_env(default='radio://0/80/2M/E7E7E7E714')
 # Unit: meter
 DEFAULT_HEIGHT = 1 #1
 FOV_ZRANGER=math.radians(2.1)
-BOX_LIMIT_X = 1.5 #5
-BOX_LIMIT_Y = 0.2 #3
+BOX_LIMIT_X = 2 #5
+BOX_LIMIT_Y = 0.5 #3
 START_POS_X = 0
 START_POS_Y = 0
 GOAL_ZONE_X=0.1
@@ -229,8 +229,6 @@ def obstacle_avoidance():
     global velocity_x, velocity_y, pos_estimate_before, state, first_detection, no_detection 
 
     if (is_close(multiranger.left)):  #state 1
-        print(multiranger.left)
-        print("object detected on the left")
         if state==1 :
             pos_estimate_before = position_estimate[0]
         velocity_y = 0.0
@@ -246,13 +244,10 @@ def obstacle_avoidance():
         if (first_detection):
             if (not(is_close(multiranger.back))): 
                 no_detection = no_detection + 1
-                print(no_detection)
                 if (no_detection >= 2): # for safety
                     state = 3
         if (is_close(multiranger.back)):
             first_detection =1
-            print('first_detection')
-            print(first_detection)
         return True
         
     if (state == 3): #state 3
@@ -261,6 +256,10 @@ def obstacle_avoidance():
         velocity_x = - VELOCITY
         if (position_estimate[0] < abs(pos_estimate_before + 0.01)):
             state = 1
+            no_detection = 0
+            first_detection = 0
+            velocity_y = 0
+            velocity_x = 0
             return False
         return True  #check this indent
 
