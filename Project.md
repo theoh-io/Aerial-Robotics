@@ -32,6 +32,13 @@ Record position of obstacles when detected <br>
 Record Obstacle position when detected <br>
 Record Safe Waypoints at a given frequency <br>
 A* to sompute optimal path for the way back while avoiding obstacles <br>
+### A*
+Inputs: Start, Goal, heuristic (cost function in our case L2), OccupancyGrid 2D np.array
+variables description: Occupancy grid: 0 free, 1 not explored, 2 obstacle
+parameter: grid size => to be able to compute the distance between points of the grid
+output: waypoint list (en ligne droite)
+when is it called: everytime in the loop
+Bonus:  Checkpoint amelioré, Visualisation of the grid in real time.
 
 
 

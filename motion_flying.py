@@ -16,20 +16,26 @@ from cflib.utils.multiranger import Multiranger
 URI = uri_helper.uri_from_env(default='radio://0/80/2M/E7E7E7E714')
 
 # Unit: meter
-DEFAULT_HEIGHT = 0.25 #1
+DEFAULT_HEIGHT = 1 #1
 FOV_ZRANGER=math.radians(2.1)
 BOX_LIMIT_X = 2 #5
-BOX_LIMIT_Y = 1 #3
+BOX_LIMIT_Y = 0.5 #3
 START_POS_X = 0
 START_POS_Y = 0
-GOAL_ZONE_X=0.5
+GOAL_ZONE_X=0.1
 START_EXPLORE_X = GOAL_ZONE_X-START_POS_X
 
-TIME_EXPLORE= 25
+TIME_EXPLORE= 30
 
 
 #to be added in parser
 verbose = True
+state_zigzag={'start':-1, 'left':0, 'forward1':1, 'right':2, 'forward2':3, 'back2left':4, 'arrived':5}
+
+## A* star or global nav variables
+start = [START_POS_X, START_POS_Y] # to get before the start of the drone
+goal = [100,100] # to get from the zranger detection, to get when landing on base done
+len_x, len_y = (500, 200)
 
 deck_attached_event = Event()
 
@@ -96,38 +102,42 @@ def move_box_limit(scf):
 
 
 def zigzag_nonblocking():
-    global case, x_offset, yaw_landing
+    global case, x_offset, yaw_landing, state_zigzag
     #to test way_back
     global start_time, goal_x, goal_y
-    if case==-1:
+    print(state_zigzag['start'])
+    if case==state_zigzag["start"]:
         mc.start_forward()
-        case =0
-    if (case==0 and position_estimate[0]>START_EXPLORE_X) or case ==4:
+        case=state_zigzag["left"]
+    if (case==state_zigzag["left"] and position_estimate[0]>START_EXPLORE_X) or case ==4:
         mc.start_left()
-        case=1
-    elif case==1 and position_estimate[1] > BOX_LIMIT_Y-START_POS_Y:
+        case=state_zigzag["forward1"]
+    elif case==state_zigzag["forward1"] and position_estimate[1] > BOX_LIMIT_Y-START_POS_Y:
         print("!!!!!!!!!!!!reached bbox")
         mc.forward(x_offset)
-        case=2
-    elif case == 2:
+        case=state_zigzag["right"]
+    elif case == state_zigzag["right"]:
         mc.start_right()
-        case = 3
-    elif case == 3 and  position_estimate[1] < -START_POS_Y:
+        case = state_zigzag["forward2"]
+    elif case == state_zigzag["forward2"] and  position_estimate[1] < -START_POS_Y:
         mc.forward(x_offset)
-        case=4
+        case=state_zigzag["back2left"]
+    #Temporaire: condition d'arret si la limite de l'arene en x 
     if position_estimate[0] > BOX_LIMIT_X - START_POS_X:
         mc.land()
-    #just to test the way back
+    #Temporaire condition de retour basé sur le temps de vol
     if(time.time()-start_time>TIME_EXPLORE):
         print(" Exploration time exceeded")
         yaw_landing=position_estimate[2]
         print("yaw during landing", yaw_landing)
-        mc.land()
+        #must record goal pos before landing because variation can occur
         goal_x=position_estimate[0]
         goal_y=position_estimate[1]
-        mc.take_off(DEFAULT_HEIGHT)
+        mc.land()
         time.sleep(1)
-        case =5 #to get out of zigzag
+        mc.take_off(DEFAULT_HEIGHT)
+        #clean_takeoff(mc, [goal_x, goal_y, yaw_landing])
+        case =state_zigzag["arrived"] #to get out of zigzag
 
 def go_back():
     global goal_x, goal_y
@@ -144,18 +154,60 @@ def compute_offset():
     print(offset)
     return offset
 
-def clean_takeoff(mc): 
-    time.sleep(1)
-    mc._reset_position_estimator()
-    time.sleep(1)
-    init_x = position_estimate[0]
-    init_y = position_estimate[1]
-    init_yaw = position_estimate[3]
-    print("Start pos:",START_POS_X+position_estimate[0]-init_x,START_POS_Y+position_estimate[1]-init_y)
-    print("Start yaw:", position_estimate[3]-init_yaw)
-    time.sleep(3)
-    regulate_yaw(mc, init_yaw, position_estimate[3])
-    return init_x, init_y, init_yaw
+def clean_takeoff(mc, init_coord=None): 
+    #au début pas de coordonnées initiales
+    if init_coord is None:
+        time.sleep(0.1)
+        #nécéssaire ???
+        mc._reset_position_estimator()
+        time.sleep(0.2)
+        init_x = START_POS_X+position_estimate[0]
+        init_y = START_POS_Y+position_estimate[1]
+        init_yaw = position_estimate[3]
+        print("Start pos (x, y):", init_x, init_y)
+        print("Start yaw:", position_estimate[3]-init_yaw)
+        regulate_x(mc, START_POS_X, init_x)
+        time.sleep(0.1)
+        regulate_y(mc, START_POS_Y, init_y)
+        time.sleep(0.1)
+        regulate_yaw(mc, init_yaw, position_estimate[3])
+        time.sleep(0.1)
+        return init_x, init_y, init_yaw
+    #apres le landing on veut controler la position après le redécollage
+    # else:
+    #     print("in regulate re-takeoff")
+    #     time.sleep(1)
+    #     curr_x = position_estimate[0]
+    #     curr_y = position_estimate[1]
+    #     curr_yaw = position_estimate[3]
+    #     print("current pos (x, y, yaw):", curr_x, curr_y, curr_yaw)
+    #     print("before landing pos (x, y, yaw):", init_coord[0], init_coord[1], init_coord[2])
+    #     #regulate_x(mc, init_coord[0], curr_x)
+    #     #regulate_y(mc, init_coord[1], curr_y)
+    #     regulate_yaw(mc, init_coord[2], curr_yaw)
+    #     return init_x, init_y, init_yaw
+
+def regulate_x(mc, init_x, curr_x):
+    print("in regulate_x")
+    error_x=curr_x-init_x
+    if error_x>0:
+        mc.back(error_x)
+    if error_x<0:
+        mc.forward(-error_x)
+    else:
+        print("zero_error")
+
+def regulate_y(mc, init_y, curr_y):
+    print("in regulate_y")
+    error_y=curr_y-init_y
+    if error_y>0:
+        mc.right(error_y)
+    if error_y<0:
+        mc.left(-error_y)
+    else:
+        print("zero_error")
+
+
 
 # regulate yaw to init angle
 def regulate_yaw(mc, init_yaw, curr_yaw):
@@ -174,32 +226,40 @@ def is_close(range):
         return range < MIN_DISTANCE
 
 def obstacle_avoidance():
-    global velocity_x, velocity_y, avoided, pos_estimate_before, avoided_left
+    global velocity_x, velocity_y, pos_estimate_before, state, first_detection, no_detection 
 
-    if is_close(multiranger.left):  
-        print("object detected on the left")
-        pos_estimate_before = position_estimate[0]
+    if (is_close(multiranger.left)):  #state 1
+        if state==1 :
+            pos_estimate_before = position_estimate[0]
         velocity_y = 0.0
         velocity_x = VELOCITY
-        avoided_left = 1
+        print(velocity_x)
+        state = 2
         return True
-
-    if is_close(multiranger.back):
-        print("object behind")
-        avoided = 1
-        return True
-
-    if (avoided_left ==1 & avoided == 0):
+    
+    if (state == 2): #state 2
+        print('state =2')
         velocity_x = 0.0
         velocity_y = VELOCITY
+        if (first_detection):
+            if (not(is_close(multiranger.back))): 
+                no_detection = no_detection + 1
+                if (no_detection >= 2): # for safety
+                    state = 3
+        if (is_close(multiranger.back)):
+            first_detection =1
         return True
         
-    if (avoided):
+    if (state == 3): #state 3
+        print('state =3')
         velocity_y = 0
         velocity_x = - VELOCITY
         if (position_estimate[0] < abs(pos_estimate_before + 0.01)):
-            avoided = 0
-            avoided_left = 0
+            state = 1
+            no_detection = 0
+            first_detection = 0
+            velocity_y = 0
+            velocity_x = 0
             return False
         return True  #check this indent
 
@@ -234,37 +294,46 @@ if __name__ == '__main__':
         with MotionCommander(scf, default_height=DEFAULT_HEIGHT) as mc:
             with Multiranger(scf) as multiranger:
                 #little sleep needed for takeoff
-                time.sleep(1)
+                time.sleep(0.1)
+                #function to reset the estimations
+                clean_takeoff(mc)
+    
                 #variables used for the wayback test based on time
                 start_time=time.time()
                 print(start_time)
                 goal_x=0
                 goal_y=0
                 #variables needed for zigzag
-                case=-1
+                case=state_zigzag["start"]
                 x_offset=0.25#compute_offset() test with 30cm
                 #variables needed for obstacle avoidance
-                avoided = 0
                 VELOCITY = 0.2
                 pos_estimate_before = 0
-                avoided_left = 0
                 yaw_landing=0
+                velocity_y = 0
+                velocity_x = 0
+                state = 1
+                first_detection = 0
+                no_detection = 0
 
                 while(1):
+                    print(obstacle_avoidance())
                     if (obstacle_avoidance() == False):
+                        print('obs false')
                         #if no obstacle is being detected let zigzag manage the speeds
                         if case != 5:
                             zigzag_nonblocking()
                         else:
-                            regulate_yaw(mc, yaw_landing, position_estimate[2]) #compensate the error in yaw during landing
+                            regulate_yaw(mc, yaw_landing, position_estimate[3]) #compensate the error in yaw during landing
                             print("yaw after regulate:", position_estimate[3])
                             go_back()
                         time.sleep(1)
                     else:
                         print("obstacle av = True")
+                        #print(velocity_x, velocity_y)
                         #obstacle detected then gives manually the speeds defined by obstacle avoidance
                         mc.start_linear_motion(velocity_x, velocity_y, 0)
-                        
+                        time.sleep(0.1)
         #stop logging
         logconf.stop()
 
