@@ -30,6 +30,12 @@ TIME_EXPLORE= 90
 
 #to be added in parser
 verbose = True
+state={"start":-1, "left":0, "forward1":1, "right":2, "forward2":3, "back2left":4, "arrived":5}
+
+## A* star or global nav variables
+start = [START_POS_X, START_POS_Y] # to get before the start of the drone
+goal = [100,100] # to get from the zranger detection, to get when landing on base done
+len_x, len_y = (500, 200)
 
 deck_attached_event = Event()
 
@@ -99,25 +105,26 @@ def zigzag_nonblocking():
     global case, x_offset, yaw_landing
     #to test way_back
     global start_time, goal_x, goal_y
-    if case==-1:
+    if case==state["start"]:
         mc.start_forward()
-        case =0
-    if (case==0 and position_estimate[0]>START_EXPLORE_X) or case ==4:
+        case=state["left"]
+    if (case==state["left"] and position_estimate[0]>START_EXPLORE_X) or case ==4:
         mc.start_left()
-        case=1
-    elif case==1 and position_estimate[1] > BOX_LIMIT_Y-START_POS_Y:
+        case=state["forward1"]
+    elif case==state["forward1"] and position_estimate[1] > BOX_LIMIT_Y-START_POS_Y:
         print("!!!!!!!!!!!!reached bbox")
         mc.forward(x_offset)
-        case=2
-    elif case == 2:
+        case=state["right"]
+    elif case == state["right"]:
         mc.start_right()
-        case = 3
-    elif case == 3 and  position_estimate[1] < -START_POS_Y:
+        case = state["forward2"]
+    elif case == state["forward2"] and  position_estimate[1] < -START_POS_Y:
         mc.forward(x_offset)
-        case=4
+        case=state["back2left"]
+    #Temporaire: condition d'arret si la limite de l'arene en x 
     if position_estimate[0] > BOX_LIMIT_X - START_POS_X:
         mc.land()
-    #just to test the way back
+    #Temporaire condition de retour basé sur le temps de vol
     if(time.time()-start_time>TIME_EXPLORE):
         print(" Exploration time exceeded")
         yaw_landing=position_estimate[2]
@@ -127,7 +134,7 @@ def zigzag_nonblocking():
         goal_y=position_estimate[1]
         mc.take_off(DEFAULT_HEIGHT)
         time.sleep(1)
-        case =5 #to get out of zigzag
+        case =state["arrived"] #to get out of zigzag
 
 def go_back():
     global goal_x, goal_y
