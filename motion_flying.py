@@ -225,22 +225,34 @@ def is_close(range):
     else:
         return range < MIN_DISTANCE
 
-def obstacle_avoidance():
-    global velocity_x, velocity_y, pos_estimate_before, state, first_detection, no_detection 
+def  obstacle_avoid_left_right():
+    global velocity_x, velocity_y, pos_estimate_before, state, first_detection, no_detection, from_left, from_right
 
-    if (is_close(multiranger.left)):  #state 1
-        if state==1 :
+    if (is_close(multiranger.left)): 
+        from_left = 1
+        if (state==1) :
             pos_estimate_before = position_estimate[0]
         velocity_y = 0.0
         velocity_x = VELOCITY
-        print(velocity_x)
+        state = 2
+        return True
+
+    if (is_close(multiranger.right)): 
+        from_right = 1
+        if (state==1) :
+            pos_estimate_before = position_estimate[0]
+        velocity_y = 0.0
+        velocity_x = VELOCITY
         state = 2
         return True
     
     if (state == 2): #state 2
         print('state =2')
         velocity_x = 0.0
-        velocity_y = VELOCITY
+        if (from_right):
+            velocity_y = VELOCITY
+        if (from_left):
+            velocity_y = -VELOCITY      
         if (first_detection):
             if (not(is_close(multiranger.back))): 
                 no_detection = no_detection + 1
@@ -260,9 +272,69 @@ def obstacle_avoidance():
             first_detection = 0
             velocity_y = 0
             velocity_x = 0
+            from_left =0
+            from_right =0
             return False
         return True  #check this indent
 
+def  obstacle_avoid_front_back():
+    global velocity_x, velocity_y, pos_estimate_before, state, first_detection, no_detection, from_front, from_back
+
+    if (is_close(multiranger.front)): 
+        from_front = 1
+        if (state==1) :
+            pos_estimate_before = position_estimate[0]
+        velocity_y = - VELOCITY
+        velocity_x = 0
+        state = 2
+        return True
+
+    if (is_close(multiranger.back)): 
+        from_back = 1
+        if (state==1) :
+            pos_estimate_before = position_estimate[0]
+        velocity_y = - VELOCITY
+        velocity_x = 0
+        state = 2
+        return True
+    
+    if (state == 2): #state 2
+        print('state =2')
+        velocity_y = 0.0
+        if (from_front):
+            velocity_x = VELOCITY
+        if (from_back):
+            velocity_x = -VELOCITY      
+        if (first_detection):
+            if (not(is_close(multiranger.left))): 
+                no_detection = no_detection + 1
+                if (no_detection >= 2): # for safety
+                    state = 3
+        if (is_close(multiranger.left)):
+            first_detection =1
+        return True
+        
+    if (state == 3): #state 3
+        print('state =3')
+        velocity_y = VELOCITY
+        velocity_x = 0
+        if (position_estimate[0] < abs(pos_estimate_before + 0.01)):
+            state = 1
+            no_detection = 0
+            first_detection = 0
+            velocity_y = 0
+            velocity_x = 0
+            from_front =0
+            from_back =0
+            return False
+        return True  #check this indent
+
+def obstacle_avoidance():
+
+    if ((is_close(multiranger.left) or is_close(multiranger.right) or from_left or from_right) & (from_front ==0) & (from_back == 0)):  #state 1
+        return obstacle_avoid_left_right()
+    elif ((is_close(multiranger.front) or is_close(multiranger.back) or from_front or from_back) & (from_right ==0) & (from_left == 0)):
+        return obstacle_avoid_front_back()
     return False
 
 
