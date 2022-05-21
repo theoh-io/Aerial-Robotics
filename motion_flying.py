@@ -3,7 +3,8 @@ import sys
 import time
 from threading import Event
 import math
-import astar
+import numpy as np
+from astar import find_path
 
 import cflib.crtp
 from cflib.crazyflie import Crazyflie
@@ -122,26 +123,16 @@ def zigzag_nonblocking():
         mc.take_off(DEFAULT_HEIGHT)
         case =5 #to get out of zigzag
 
-def go_back():
+def go_back(occupancy_grid):
     global goal_x, goal_y
-    #first goes to 0 in x
-    dist_x=goal_x
-    mc.back(dist_x)
-    #goes to 0 in y
-    dist_y=goal_y
-    mc.right(dist_y)
+    path=find_path(start, goal, occupancy_grid, len_x+1, len_y+1)
+
     mc.land()
 
 def compute_offset():
     offset=math.tan(FOV_ZRANGER)/DEFAULT_HEIGHT
     print(offset)
     return offset
-
-    
-    
-
-
-#def FSM():
 
 if __name__ == '__main__':
 
@@ -173,7 +164,7 @@ if __name__ == '__main__':
             print(start_time)
             goal_x=0
             goal_y=0
-
+            occupancy_grid = np.zeros((len_x,len_y))
             case=-1
             x_offset=0.25#compute_offset()
             #mc.start_forward()
@@ -191,3 +182,5 @@ if __name__ == '__main__':
 
         #stop logging
         logconf.stop()
+
+        mc.land()
