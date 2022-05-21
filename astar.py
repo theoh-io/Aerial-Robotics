@@ -6,9 +6,9 @@ START_POS_X = 0
 START_POS_Y = 0
 
 ## A* star or global nav variables
-start = [START_POS_X, START_POS_Y] # to get before the start of the drone
-goal = [100,100] # to get from the zranger detection, to get when landing on base done
-len_x, len_y = (500, 200)
+start = (START_POS_X, START_POS_Y) # to get before the start of the drone
+goal = (9,4) # to get from the zranger detection, to get when landing on base done
+len_x, len_y = (10, 5)
 
 ###################################################################################################################
 # Define all types of movements between two points:
@@ -34,33 +34,33 @@ def type_deplacement(ptA,ptB):
         deplacement = 'N'
     return deplacement
 
-# Transform list of points in segments and checkpoints
-# This helps to get a smoother path, removing "zigzag"
-def define_checkpoints(path):
-    ### First transform the path to get checkpoints, for each segment
-    checkpoints = []
-    deplacement1 = ' ' # first point defined as a checkpoint
-    for i in range (1,len(path[0])):
-        pos1 = path[:,i-1]
-        pos2 = path[:,i]
-        deplacement2 = type_deplacement(pos2,pos1)
-        if (deplacement1 != deplacement2):
-            checkpoints.append(pos1)
-        deplacement1 = deplacement2
+# # Transform list of points in segments and checkpoints
+# # This helps to get a smoother path, removing "zigzag"
+# def define_checkpoints(path):
+#     ### First transform the path to get checkpoints, for each segment
+#     checkpoints = []
+#     deplacement1 = ' ' # first point defined as a checkpoint
+#     for i in range (1,len(path[0])):
+#         pos1 = path[:,i-1]
+#         pos2 = path[:,i]
+#         deplacement2 = type_deplacement(pos2,pos1)
+#         if (deplacement1 != deplacement2):
+#             checkpoints.append(pos1)
+#         deplacement1 = deplacement2
         
-    checkpoints.append(pos2) # last point defined as a checkpoint
-    smooth_cp = []
+#     checkpoints.append(pos2) # last point defined as a checkpoint
+#     smooth_cp = []
     
-    ### Then remove the very small changes ("zigzags")
-    smooth_cp.append(checkpoints[0]) # last point defined as a checkpoint
+#     ### Then remove the very small changes ("zigzags")
+#     smooth_cp.append(checkpoints[0]) # last point defined as a checkpoint
 
-    for i in range (0,len(checkpoints)-1):
-        pos1 = checkpoints[i]
-        pos2 = checkpoints[i+1]
-        if (abs(checkpoints[i][0]-checkpoints[i+1][0])>1)or(abs(checkpoints[i][1]-checkpoints[i+1][1])>1):
-            smooth_cp.append(checkpoints[i+1])
-    smooth_cp.append(checkpoints[len(checkpoints)-1])
-    return smooth_cp
+#     for i in range (0,len(checkpoints)-1):
+#         pos1 = checkpoints[i]
+#         pos2 = checkpoints[i+1]
+#         if (abs(checkpoints[i][0]-checkpoints[i+1][0])>1)or(abs(checkpoints[i][1]-checkpoints[i+1][1])>1):
+#             smooth_cp.append(checkpoints[i+1])
+#     smooth_cp.append(checkpoints[len(checkpoints)-1])
+#     return smooth_cp
 
 ###################################################################################################################
 
@@ -203,15 +203,28 @@ def find_path(start, goal, occupancy_grid, len_x, len_y):
     pos = np.empty(x.shape + (2,))
     pos[:, :, 0] = x; pos[:, :, 1] = y
     pos = np.reshape(pos, (x.shape[0]*x.shape[1], 2))
-    coords = list([(int(x[0]), int(x[1])) for x in pos])
+    # unzip dans une liste les valeurs de pos, = toutes les coordonnées de la grid
+    # pos et coords sont les mêmes infos, toutes les coordonnées de la grille mais dans un autre format
+    coords = list([(int(x[1]), int(x[0])) for x in pos])
 
     # Heuristic =  Euclidian distance between the starting point and the goal, ignoring obstacles
     h = np.linalg.norm(pos - goal, axis=-1)
     h = dict(zip(coords, h))
 
     # Run the A* algorithm
-    path, visitedNodes = A_Star(start, goal, h, coords, occupancy_grid, len_y, len_x, movement_type="8N")
+    path, visitedNodes = A_Star(start, goal, h, coords, occupancy_grid, len_x, len_y, movement_type="8N")
     path = np.array(path).reshape(-1, 2).transpose()
     visitedNodes = np.array(visitedNodes).reshape(-1, 2).transpose()
+    return path
 
-    return define_checkpoints(path)
+
+occupancy_grid = np.zeros((len_x,len_y))
+occupancy_grid[1,1] = 1
+occupancy_grid[1,2] = 1
+occupancy_grid[2,1] = 1
+occupancy_grid[4,0] = 1
+occupancy_grid[4,2] = 1
+occupancy_grid[5,1] = 1
+occupancy_grid[5,2] = 1
+path=find_path(start, goal, occupancy_grid, len_x+1, len_y+1)
+print(path)
