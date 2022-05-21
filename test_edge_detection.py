@@ -187,7 +187,7 @@ if __name__ == '__main__':
                         loop = False
                         if case == 0:
                             #left
-                            mc.left(0.15)
+                            #mc.left(0.15)
                             mc.land()
                         if case == 1:
                             #forward1
@@ -197,11 +197,11 @@ if __name__ == '__main__':
                             mc.land()
                         if case == 2:
                             #right
-                            mc.right(0.15)
+                            #mc.right(0.15)
                             mc.land()
                         if case == 3:
                             #forward2
-                            mc.forward(0.15)
+                            #mc.forward(0.15)
                             mc.land()
 
             #mc.land()
