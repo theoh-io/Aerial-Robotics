@@ -321,7 +321,7 @@ if __name__ == '__main__':
                     if (obstacle_avoidance() == False):
                         print('obs false')
                         #if no obstacle is being detected let zigzag manage the speeds
-                        if case != 5:
+                        if case != state_zigzag['arrived']:
                             zigzag_nonblocking()
                         else:
                             regulate_yaw(mc, yaw_landing, position_estimate[3]) #compensate the error in yaw during landing
