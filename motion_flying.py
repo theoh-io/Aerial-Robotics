@@ -3,6 +3,7 @@ import sys
 import time
 from threading import Event
 import math
+import astar
 
 import cflib.crtp
 from cflib.crazyflie import Crazyflie
@@ -24,6 +25,11 @@ GOAL_ZONE_X=0.1
 START_EXPLORE_X = GOAL_ZONE_X-START_POS_X
 
 TIME_EXPLORE= 3
+
+## A* star or global nav variables
+start = [START_POS_X, START_POS_Y] # to get before the start of the drone
+goal = [100,100] # to get from the zranger detection, to get when landing on base done
+len_x, len_y = (500, 200)
 
 deck_attached_event = Event()
 
