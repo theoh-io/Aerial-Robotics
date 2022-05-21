@@ -387,6 +387,11 @@ if __name__ == '__main__':
                 state = 1
                 first_detection = 0
                 no_detection = 0
+                from_front =0
+                from_back =0
+                from_left =0
+                from_right =0
+
 
                 while(1):
                     print(obstacle_avoidance())
