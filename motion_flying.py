@@ -166,7 +166,7 @@ def regulate_yaw(mc, init_yaw, curr_yaw):
         mc.turn_right(curr_yaw - init_yaw)
 
 def is_close(range):
-    MIN_DISTANCE = 0.5  # m
+    MIN_DISTANCE = 0.2  # m
 
     if range is None:
         return False
@@ -174,32 +174,34 @@ def is_close(range):
         return range < MIN_DISTANCE
 
 def obstacle_avoidance():
-    global velocity_x, velocity_y, avoided, pos_estimate_before, avoided_left
+    global velocity_x, velocity_y, pos_estimate_before, state, first_detection, no_detection 
 
-    if is_close(multiranger.left):  
+    if (is_close(multiranger.left) & (state == 1)):  #state 1
         print("object detected on the left")
-        pos_estimate_before = position_estimate[0]
+        if (state ==1):
+            pos_estimate_before = position_estimate[0]
         velocity_y = 0.0
         velocity_x = VELOCITY
-        avoided_left = 1
+        print(velocity_x)
+        state = 2
         return True
-
-    if is_close(multiranger.back):
-        print("object behind")
-        avoided = 1
-        return True
-
-    if (avoided_left ==1 & avoided == 0):
+    
+    if (state == 2): #state 2
         velocity_x = 0.0
         velocity_y = VELOCITY
+        if (first_detection & (no_detection >= 1)):
+            state = 3
+        if (is_close(multiranger.back)):
+            first_detection =1
+        if (not(is_close(multiranger.back))): # for safety
+            no_detection = no_detection + 1
         return True
         
-    if (avoided):
+    if (state == 3): #state 3
         velocity_y = 0
         velocity_x = - VELOCITY
         if (position_estimate[0] < abs(pos_estimate_before + 0.01)):
-            avoided = 0
-            avoided_left = 0
+            state = 1
             return False
         return True  #check this indent
 
@@ -249,6 +251,13 @@ if __name__ == '__main__':
                 pos_estimate_before = 0
                 avoided_left = 0
                 yaw_landing=0
+                velocity_y = 0
+                velocity_x = 0
+                state = 1
+                first_detection = 0
+                no_detection = 0
+
+
 
                 while(1):
                     if (obstacle_avoidance() == False):
@@ -262,6 +271,7 @@ if __name__ == '__main__':
                         time.sleep(1)
                     else:
                         print("obstacle av = True")
+                        print(velocity_x)
                         #obstacle detected then gives manually the speeds defined by obstacle avoidance
                         mc.start_linear_motion(velocity_x, velocity_y, 0)
                         
