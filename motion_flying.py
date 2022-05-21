@@ -166,7 +166,7 @@ def regulate_yaw(mc, init_yaw, curr_yaw):
         mc.turn_right(curr_yaw - init_yaw)
 
 def is_close(range):
-    MIN_DISTANCE = 0.2  # m
+    MIN_DISTANCE = 0.5  # m
 
     if range is None:
         return False
@@ -174,7 +174,7 @@ def is_close(range):
         return range < MIN_DISTANCE
 
 def obstacle_avoidance():
-    global velocity_x, velocity_y, avoided, pos_estimate_before
+    global velocity_x, velocity_y, avoided, pos_estimate_before, avoided_left
 
     if is_close(multiranger.left):  
         print("object detected on the left")
@@ -247,6 +247,7 @@ if __name__ == '__main__':
                 avoided = 0
                 VELOCITY = 0.2
                 pos_estimate_before = 0
+                avoided_left = 0
                 yaw_landing=0
 
                 while(1):
