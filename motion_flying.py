@@ -22,10 +22,10 @@ BOX_LIMIT_X = 2 #5
 BOX_LIMIT_Y = 1 #3
 START_POS_X = 0
 START_POS_Y = 0
-GOAL_ZONE_X=0.5
+GOAL_ZONE_X=0.1
 START_EXPLORE_X = GOAL_ZONE_X-START_POS_X
 
-TIME_EXPLORE= 25
+TIME_EXPLORE= 90
 
 
 #to be added in parser
@@ -166,7 +166,7 @@ def regulate_yaw(mc, init_yaw, curr_yaw):
         mc.turn_right(curr_yaw - init_yaw)
 
 def is_close(range):
-    MIN_DISTANCE = 0.2  # m
+    MIN_DISTANCE = 0.5  # m
 
     if range is None:
         return False
@@ -176,9 +176,10 @@ def is_close(range):
 def obstacle_avoidance():
     global velocity_x, velocity_y, pos_estimate_before, state, first_detection, no_detection 
 
-    if (is_close(multiranger.left) & (state == 1)):  #state 1
+    if (is_close(multiranger.left)):  #state 1
+        print(multiranger.left)
         print("object detected on the left")
-        if (state ==1):
+        if state==1 :
             pos_estimate_before = position_estimate[0]
         velocity_y = 0.0
         velocity_x = VELOCITY
@@ -187,17 +188,23 @@ def obstacle_avoidance():
         return True
     
     if (state == 2): #state 2
+        print('state =2')
         velocity_x = 0.0
         velocity_y = VELOCITY
-        if (first_detection & (no_detection >= 1)):
-            state = 3
+        if (first_detection):
+            if (not(is_close(multiranger.back))): 
+                no_detection = no_detection + 1
+                print(no_detection)
+                if (no_detection >= 2): # for safety
+                    state = 3
         if (is_close(multiranger.back)):
             first_detection =1
-        if (not(is_close(multiranger.back))): # for safety
-            no_detection = no_detection + 1
+            print('first_detection')
+            print(first_detection)
         return True
         
     if (state == 3): #state 3
+        print('state =3')
         velocity_y = 0
         velocity_x = - VELOCITY
         if (position_estimate[0] < abs(pos_estimate_before + 0.01)):
@@ -246,10 +253,8 @@ if __name__ == '__main__':
                 case=-1
                 x_offset=0.25#compute_offset() test with 30cm
                 #variables needed for obstacle avoidance
-                avoided = 0
                 VELOCITY = 0.2
                 pos_estimate_before = 0
-                avoided_left = 0
                 yaw_landing=0
                 velocity_y = 0
                 velocity_x = 0
@@ -257,10 +262,10 @@ if __name__ == '__main__':
                 first_detection = 0
                 no_detection = 0
 
-
-
                 while(1):
+                    print(obstacle_avoidance())
                     if (obstacle_avoidance() == False):
+                        print('obs false')
                         #if no obstacle is being detected let zigzag manage the speeds
                         if case != 5:
                             zigzag_nonblocking()
@@ -271,10 +276,10 @@ if __name__ == '__main__':
                         time.sleep(1)
                     else:
                         print("obstacle av = True")
-                        print(velocity_x)
+                        #print(velocity_x, velocity_y)
                         #obstacle detected then gives manually the speeds defined by obstacle avoidance
                         mc.start_linear_motion(velocity_x, velocity_y, 0)
-                        
+                        time.sleep(0.1)
         #stop logging
         logconf.stop()
 
