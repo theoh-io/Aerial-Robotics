@@ -24,7 +24,18 @@ on connait position départ et arène dim mais pas objectif
 
 ## Obstacle Avoidance
 
-### Recuperer valeurs multirangers (capteurs cotés TOF)
+### A*
+Inputs: Start, Goal, heuristic (cost function in our case L2), OccupancyGrid 2D np.array
+variables description: Occupancy grid: 0 free, 1 not explored, 2 obstacle
+parameter: grid size => to be able to compute the distance between points of the grid
+output: waypoint list (en ligne droite)
+when is it called: everytime in the loop
+Bonus: Visualisation of the grid in real time.
+
+### Waypoint following
+Input: current position, next waypoint
+description: send non blocking direction command 
+Output: s
 
 ### Algo de contournement
 
