@@ -39,15 +39,17 @@ position_estimate = [0, 0, 0, 0]
 logs = np.zeros([100000,4])
 count = 0
 
-edge_detection = False
+edge = False
 
 def is_edge(z_1,z_2):
-    MIN_EDGE = 0.10  # m
+    MIN_EDGE = 0.05  # m
+    print(abs(z_1-z_2))
 
     if abs(z_1-z_2) > MIN_EDGE :
         return True
     else:
         return False
+
 
 def is_close(range):
     MIN_DISTANCE = 0.2  # m
@@ -58,7 +60,7 @@ def is_close(range):
         return range < MIN_DISTANCE
 
 def log_pos_callback(timestamp, data, logconf):
-    print(data)
+    #print(data)
     global position_estimate
     position_estimate[0] = data['stateEstimate.x']
     position_estimate[1] = data['stateEstimate.y']
@@ -67,31 +69,78 @@ def log_pos_callback(timestamp, data, logconf):
 
 def stab_log_data(timestamp, data, logconf):
     """Callback froma the log API when data arrives"""
-    print('[%d][%s]: %s' % (timestamp, logconf.name, data))
+    #print('[%d][%s]: %s' % (timestamp, logconf.name, data))
     global count
     
     # Save info into log variable
     for idx, i in enumerate(list(data)):
-        logs[count][idx] = data[i]
-        print(logs[count][idx])
+        #print('enumerate ', enumerate(list(data)))
+        if idx < 3:
+            logs[count][idx] = data[i]*1000
+        else:
+            logs[count][idx] = data[i]
+        #print(logs[count][idx])
     count += 1
+    
+    #print(count)
 
-def edge_detection():
-    global edge_detection
+case = 1 
+# -1 start 
+# 0 left    zizag
+# 1 forward1 offset 
+# 2 right   zizag
+# 3 forward2 offset
 
+
+def edge_detection(timestamp, data, logconf):
+    global edge
+    #print('function edge')
     z_1 = multiranger.down
-    time.sleep(0.1)
+    time.sleep(0.2)
     z_2 = multiranger.down
     
-    if is_edge(z_1,z_2):
-        edge_detection = True
-        print('Edge_detection')
-        mc.stop()
+    if is_edge(z_1,z_2) :
+        edge = True
+        print('Edge detected')
+    else:
+        edge = False
 
     if is_close(multiranger.up):
-        edge_detection = True
         print('Stop by hand')
-        mc.stop()
+        mc.land()
+
+def is_edge_2():
+    MIN_EDGE2 = 50  # mm
+    #print("function is edge 2")
+    logs_copy2=logs[~np.all(logs == 0, axis=1)]
+    #print(len(logs_copy2))
+
+    if len(logs_copy2) > 50:
+        z_2=logs_copy2[-1,3]
+        #print(z_2)
+        z_1=logs_copy2[-50,3]
+        #print(z_2)
+
+        if abs(z_1-z_2) > MIN_EDGE2 :
+            print(abs(z_1-z_2))
+            return True
+        else:
+            return False
+    else:
+        return False
+
+def edge_detection_2(timestamp, data, logconf):
+    global edge
+    #print('function edge 2')
+    
+    if is_edge_2():
+        edge = True
+        print('------ Edge detected 2')
+    else:
+        edge = False
+
+
+
 
 
 if __name__ == '__main__':
@@ -124,13 +173,38 @@ if __name__ == '__main__':
         with MotionCommander(scf, default_height=0.5) as mc:
             #with PositionHlCommander(scf, default_velocity=0.2, default_height=1, controller=PositionHlCommander.CONTROLLER_MELLINGER) as pc:
             with Multiranger(scf) as multiranger:
-        
-                time.sleep(2)
 
-                logconf.data_received_cb.add_callback(edge_detection)
-                mc.forward(1)
-            
-            mc.stop()
+                time.sleep(2)
+                #logconf.data_received_cb.add_callback(edge_detection)
+                mc.forward(0.5)
+                #logconf.data_received_cb.add_callback(edge_detection_2)
+                
+                mc.start_forward()
+                loop = True
+                while(loop):
+                    edge = is_edge_2()
+                    if edge == True:
+                        loop = False
+                        if case == 0:
+                            #left
+                            #mc.left(0.15)
+                            mc.land()
+                        if case == 1:
+                            #forward1
+                            #print('------------- forward 15cm 2')
+                            #mc.forward(0.15)
+                            print('------------- Land 2')
+                            mc.land()
+                        if case == 2:
+                            #right
+                            #mc.right(0.15)
+                            mc.land()
+                        if case == 3:
+                            #forward2
+                            #mc.forward(0.15)
+                            mc.land()
+
+            #mc.land()
 
         #stop logging
         logconf.stop()
@@ -142,3 +216,4 @@ if __name__ == '__main__':
             os.makedirs('logs')
         filepath = os.path.join(os.getcwd(),'logs',filename)
         np.savetxt(filepath, logs, delimiter=',')
+
