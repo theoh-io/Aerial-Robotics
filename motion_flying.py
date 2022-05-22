@@ -23,17 +23,13 @@ from cflib.positioning.position_hl_commander import PositionHlCommander
 URI = uri_helper.uri_from_env(default='radio://0/80/2M/E7E7E7E714')
 
 # Unit: meter
-<<<<<<< HEAD
-DEFAULT_HEIGHT = 0.5 #1
-=======
 DEFAULT_HEIGHT = 0.2 #1
->>>>>>> master
 FOV_ZRANGER=math.radians(2.1)
 BOX_LIMIT_X = 1.5 #5
 BOX_LIMIT_Y = 0.5 #3
 START_POS_X = 0
 START_POS_Y = 0
-GOAL_ZONE_X=1
+GOAL_ZONE_X=0.5
 START_EXPLORE_X = GOAL_ZONE_X-START_POS_X
 
 TIME_EXPLORE= 50
@@ -148,23 +144,30 @@ def zigzag_nonblocking():
     global case, x_offset, yaw_landing, state_zigzag
     #to test way_back
     global start_time, goal_x, goal_y
-    print(state_zigzag['start'])
+    #print(state_zigzag['start'])
     if case==state_zigzag["start"]:
         mc.start_forward()
+        print('start')
+    if (case==state_zigzag["start"] and position_estimate[0]>START_EXPLORE_X) or case == state_zigzag["back2left"]:
         case=state_zigzag["left"]
-    if (case==state_zigzag["left"] and position_estimate[0]>START_EXPLORE_X) or case ==4:
         mc.start_left()
-        case=state_zigzag["forward1"]
-    elif case==state_zigzag["forward1"] and position_estimate[1] > BOX_LIMIT_Y-START_POS_Y:
+        print('left')
+    elif (case==state_zigzag["left"] and position_estimate[1] > BOX_LIMIT_Y-START_POS_Y) :
         print("!!!!!!!!!!!!reached bbox")
+        case=state_zigzag["forward1"]
+        print('forward 1')
         mc.forward(x_offset)
+    elif case == state_zigzag["forward1"]:
         case=state_zigzag["right"]
-    elif case == state_zigzag["right"]:
+        print('right')
         mc.start_right()
+    elif case == state_zigzag["right"] and  position_estimate[1] < -START_POS_Y:
         case = state_zigzag["forward2"]
-    elif case == state_zigzag["forward2"] and  position_estimate[1] < -START_POS_Y:
+        print('forward 2')
         mc.forward(x_offset)
         case=state_zigzag["back2left"]
+        print('back2left')
+
     #Temporaire: condition d'arret si la limite de l'arene en x 
     if position_estimate[0] > BOX_LIMIT_X - START_POS_X:
         print("Limite arene x reached")
@@ -210,7 +213,7 @@ def go_back():
 
 def compute_offset():
     offset=math.tan(FOV_ZRANGER)/DEFAULT_HEIGHT
-    print(offset)
+    #print(offset)
     return offset
 
 def clean_takeoff(mc, init_coord=None): 
@@ -364,6 +367,7 @@ def  obstacle_avoid_front_back():
         from_front = 1
         if (state==1) :
             pos_estimate_before = position_estimate[0]
+            print(pos_estimate_before)
         velocity_y = - VELOCITY
         velocity_x = 0
         state = 2
@@ -373,7 +377,7 @@ def  obstacle_avoid_front_back():
         print('state =1 back')
         from_back = 1
         if (state==1) :
-            pos_estimate_before = position_estimate[0]
+            pos_estimate_before = position_estimate[1]
         velocity_y = - VELOCITY
         velocity_x = 0
         state = 2
@@ -403,8 +407,9 @@ def  obstacle_avoid_front_back():
         print('state =3')
         velocity_y = VELOCITY
         velocity_x = 0
-        print(position_estimate[0] - pos_estimate_before)
-        if (position_estimate[0] < abs(pos_estimate_before + 0.2)):
+        print(position_estimate[1])
+        print(pos_estimate_before)
+        if (position_estimate[1] < abs(pos_estimate_before + 0.03)):
             print('fin state 3')
             if (is_close(multiranger.back)):
                 velocity_y = 0
@@ -426,12 +431,12 @@ def  obstacle_avoid_front_back():
     return False
 
 def obstacle_avoidance():
-    print(case)
+    #print(case)
 #il faut penser au cas ou la vitesse n'est pas dans la direction de l'obstacle
     if ((is_close(multiranger.left) or is_close(multiranger.right) or from_left or from_right) & (from_front ==0) & (from_back == 0)):# & (case==state_zigzag["left"] or case==state_zigzag["right"])):
         return obstacle_avoid_left_right()
     elif ((is_close(multiranger.front) or is_close(multiranger.back) or from_front or from_back) & (from_right ==0) & (from_left == 0)):# & (case==state_zigzag["forward1"] or case==state_zigzag["forward2"])): 
-        print(case)
+        #print(case)
         return obstacle_avoid_front_back()
     return False
 
@@ -503,7 +508,7 @@ if __name__ == '__main__':
                 goal_y=0
                 #variables needed for zigzag
                 case=state_zigzag["start"]
-                x_offset=0.25#compute_offset() test with 30cm
+                x_offset=0.25 #compute_offset() test with 30cm
                 #variables needed for obstacle avoidance
                 VELOCITY = 0.2
                 pos_estimate_before = 0
@@ -521,8 +526,8 @@ if __name__ == '__main__':
 
                 while(1):
                     #print(obstacle_avoidance())
-                    #if (obstacle_avoidance() == False):
-                    if True:
+                    if (obstacle_avoidance() == False):
+                    #if True:
                         print('obs false')
                         #if no obstacle is being detected let zigzag manage the speeds
                         if case != state_zigzag['arrived']:
