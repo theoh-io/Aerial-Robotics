@@ -10,6 +10,7 @@ from zipfile import ZIP_BZIP2
 import numpy as np
 import os
 import matplotlib.pyplot as plt
+from regex import R
 
 import cflib.crtp
 from cflib.crazyflie import Crazyflie
@@ -30,7 +31,7 @@ BOX_LIMIT_X = 1.5 #5
 BOX_LIMIT_Y = 0.7 #3
 START_POS_X = 0
 START_POS_Y = 0
-GOAL_ZONE_X=0.5
+GOAL_ZONE_X= 0.5
 START_EXPLORE_X = GOAL_ZONE_X-START_POS_X
 
 TIME_EXPLORE= 50
@@ -57,6 +58,8 @@ count = 0
 
 # Edge detection global variables
 edge = False
+x_edge= 0.0
+y_edge= 0.0
 
 def param_deck_flow(_, value_str):
     value = int(value_str) #conversion str to int
@@ -447,8 +450,6 @@ def obstacle_avoidance():
 
 
 # Edge detection functions ---------------------------------------------------------------------------------
-x_edge=0.0
-y_edge=0.0
 
 def is_edge_2():
     global logs
@@ -464,13 +465,17 @@ def is_edge_2():
         idx_2=np.argmax(logs_copy2[-90:,3])
         z_1=np.min(logs_copy2[-90:,3])
         idx_1=np.argmin(logs_copy2[-90:,3])
-        x1=logs_copy2[idx_1,0]
-        y1=logs_copy2[idx_1,1]
+        x1=logs_copy2[len(logs_copy2)-90+idx_1,0]/1000
+        y1=logs_copy2[len(logs_copy2)-90+idx_1,1]/1000
 
         if abs(z_1-z_2) > MIN_EDGE2:
             print('abs edge 2: ',abs(z_1-z_2))
             print('z1: ',z_1)
             print('z2: ',z_2)
+            print('idx_1: ',idx_1)
+            print('idx_2: ',idx_2)
+            print('x1: ',x1)
+            print('y1: ',y1)
             return True, x1, y1
         else:
             return False, 0, 0
@@ -481,19 +486,35 @@ def is_edge_2():
 def find_platform_center():
     global edge, case, logs, state_zigzag, position_estimate, x_edge, y_edge 
 
-    x1=position_estimate[0]
-    y1=position_estimate[1]
-    #x1=x_edge
-    #y1=y_edge
+    #x1=position_estimate[0]
+    #y1=position_estimate[1]
+    x1=x_edge
+    y1=y_edge
     
+    x1_bis=position_estimate[0]
+    y1_bis=position_estimate[1]
+
+    print(x1,' ',x1_bis)
+    print(y1,' ',y1_bis)
+    plt.axis('equal')
+    plt.scatter([x1,x1_bis],[y1,y1_bis])
+    plt.savefig('first edge')
+    
+    if case == state_zigzag["right"]:
+        mc.right(0.20)
+
+    if case == state_zigzag["left"]:
+        mc.left(0.20)
+
+    """
     while(edge == True):
         print('still close')
         edge= is_edge_2()[0]
-   
+    """
     
-    logs = np.zeros([100000,4])
+    #logs = np.zeros([100000,4])
     mc.back(0.35)
-    
+
     if case == state_zigzag["right"]:
         mc.start_left()
         while(position_estimate[1]<y1):
@@ -503,21 +524,28 @@ def find_platform_center():
         mc.start_right()
         while(position_estimate[1]>y1):
             print('going right ',position_estimate[1],' ',y1)
-    
-    
+
     mc.start_forward()
     print('going forward')
+    edge=False
 
     while(edge == False):
         [edge,x_edge,y_edge]=is_edge_2()
         if (edge==True):
-            edge=True
             print('Edge 2 detected!')
-            x2=position_estimate[0]
-            y2=position_estimate[1]
-            #x2=x_edge
-            #y2=y_edge
+            x2_bis=position_estimate[0]
+            y2_bis=position_estimate[1]
+            x2=x_edge
+            y2=y_edge
+            print(x2,' ',x2_bis)
+            print(y2,' ',y2_bis)
             #time.sleep(1)
+
+            print(x1,' ',x1_bis)
+            print(y1,' ',y1_bis)
+            plt.axis('equal')
+            plt.scatter([x1,x1_bis,x2,x2_bis],[y1,y1_bis,y2,y2_bis])
+            plt.savefig('first edge & second edge')
             
         if position_estimate[0] > BOX_LIMIT_X - START_POS_X:
             print("Limite arene x reached")
@@ -525,42 +553,41 @@ def find_platform_center():
             case =state_zigzag["arrived"]
             return
 
-    print('x1 ',x1,'  ','y1 ',y1)
-    print('x2 ',x2,'  ','y2 ',y2)
-    
-    """
     dX=0.15
     dY=0
     if case == state_zigzag["right"]:
         dY=y1-y2-0.15
     if case == state_zigzag["left"]:
         dY=-(y1-y2)-0.15
+    
+    mc.move_distance(dX,dY,0)
+    
     x0=x2+dX
     y0=y2+dY
     print('x0: ',x0,'y0: ',y0)
-
     dx_values = [x2, x0]
     dy_values = [y2, y0]
-    plt.plot(dx_values, dy_values, 'bo', linestyle="--")
+    plt.axis('equal')
+    #plt.plot(dx_values, dy_values, 'bo', linestyle="--")
     plt.scatter([x1,x2,x0],[y1,y2,y0])
-    plt.savefig('platform edges')
-
-    mc.move_distance(dX,dY,0)
-    """
+    rectangle = plt.Rectangle((x0,y0), 30, 30)
+    plt.gca().add_patch(rectangle)
+    plt.savefig('platform center')
 
     goal_x=position_estimate[0]
     goal_y=position_estimate[1]
+    print('goal_x: ',goal_x,'goal_y: ',goal_y)
     
     mc.land()
-
-    print('goal_x: ',goal_x,'goal_y: ',goal_y)
-    dx_values = [x2, goal_x]
-    dy_values = [y2, goal_y]
-    plt.plot(dx_values, dy_values, 'bo', linestyle="--")
-    plt.scatter([x1,x2,goal_x],[y1,y2,goal_y])
-    plt.savefig('platform edges')
-
     case =state_zigzag["arrived"]
+
+    #dx_values = [x2, goal_x]
+    #dy_values = [y2, goal_y]
+    #plt.plot(dx_values, dy_values, 'bo', linestyle="--")
+    #plt.scatter([x1,x2,goal_x],[y1,y2,goal_y])
+    #plt.savefig('platform edges')
+
+    
 
 # ------------------------------------------------------------------------------------------------------------
 
