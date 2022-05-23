@@ -23,10 +23,10 @@ from cflib.positioning.position_hl_commander import PositionHlCommander
 URI = uri_helper.uri_from_env(default='radio://0/80/2M/E7E7E7E714')
 
 # Unit: meter
-DEFAULT_HEIGHT = 0.2 #1
+DEFAULT_HEIGHT = 0.5 #1
 FOV_ZRANGER=math.radians(2.1)
 BOX_LIMIT_X = 1.5 #5
-BOX_LIMIT_Y = 0.5 #3
+BOX_LIMIT_Y = 0.7 #3
 START_POS_X = 0
 START_POS_Y = 0
 GOAL_ZONE_X=0.5
@@ -144,6 +144,8 @@ def zigzag_nonblocking():
     global case, x_offset, yaw_landing, state_zigzag
     #to test way_back
     global start_time, goal_x, goal_y
+    global edge, position_estimate
+
     #print(state_zigzag['start'])
     if case==state_zigzag["start"]:
         mc.start_forward()
@@ -190,13 +192,16 @@ def zigzag_nonblocking():
         case =state_zigzag["arrived"] #to get out of zigzag
 
     if ( edge == True and (case != state_zigzag["start"]) and (case != state_zigzag["arrived"]) ):
-        print('Edge detected!')
-        yaw_landing=position_estimate[2]
+        print('Edge far detected!')
+        #yaw_landing=position_estimate[2]
         #must record goal pos before landing because variation can occur
-        goal_x=position_estimate[0]
-        goal_y=position_estimate[1]
+        #goal_x=position_estimate[0]
+        #goal_y=position_estimate[1]
+        
+        find_platform_center()
         mc.land()
-        time.sleep(1)
+        
+        #time.sleep(1)
         #mc.take_off(DEFAULT_HEIGHT)
         #clean_takeoff(mc, [goal_x, goal_y, yaw_landing])
         case =state_zigzag["arrived"] #to get out of zigzag
@@ -443,28 +448,121 @@ def obstacle_avoidance():
 
 # Edge detection functions ---------------------------------------------------------------------------------
 def is_edge_2():
-    MIN_EDGE2 = 60  # mm
+    MIN_EDGE2 = 45  # mm
     logs_copy2=logs[~np.all(logs == 0, axis=1)]
 
-    if len(logs_copy2) > 80:
+    if len(logs_copy2) > 100:
         #z_2=logs_copy2[-1,3]
         #z_1=logs_copy2[-50,3]
         
-        z_2=np.max(logs_copy2[-70:,3])
-        idx_2=np.argmax(logs_copy2[-70:,3])
-        z_1=np.min(logs_copy2[-70:,3])
-        idx_1=np.argmax(logs_copy2[-70:,3])
+        z_2=np.max(logs_copy2[-100:,3])
+        idx_2=np.argmax(logs_copy2[-100:,3])
+        z_1=np.min(logs_copy2[-100:,3])
+        idx_1=np.argmin(logs_copy2[-100:,3])
 
         if abs(z_1-z_2) > MIN_EDGE2:
             print('abs edge: ',abs(z_1-z_2))
-            print('idx 1: ',idx_1)
-            print('idx 2: ',idx_2)
-            print(idx_2)
+            print('z1: ',z_1)
+            print('z2: ',z_2)
+            logs[:idx_2,:]=0
             return True
         else:
             return False
     else:
         return False
+
+def is_edge_3():
+    MIN_EDGE2 = 45  # mm
+    logs_copy2=logs[~np.all(logs == 0, axis=1)]
+
+    z_2=np.max(logs_copy2[:,3])
+    idx_2=np.argmax(logs_copy2[:,3])
+    z_1=np.min(logs_copy2[:,3])
+    idx_1=np.argmin(logs_copy2[:,3])
+
+    if len(logs_copy2) > 80:
+        #z_2=logs_copy2[-1,3]
+        #z_1=logs_copy2[-50,3]
+        
+        z_2=np.max(logs_copy2[-80:,3])
+        idx_2=np.argmax(logs_copy2[-80:,3])
+        z_1=np.min(logs_copy2[-80:,3])
+        idx_1=np.argmin(logs_copy2[-80:,3])
+
+        if abs(z_1-z_2) > MIN_EDGE2:
+            print('abs edge: ',abs(z_1-z_2))
+            print('z1: ',z_1)
+            print('z2: ',z_2)
+            logs[:idx_2,:]=0
+            return True
+        else:
+            return False
+    else:
+        print('not enough data')
+        return False
+
+def find_platform_center():
+    global edge 
+    
+    """
+    if case == state_zigzag["right"]:
+            dY=0.30
+            #dZ=-0.4
+            #mc.move_distance(0,dY,dZ,0.3)
+            mc.left(0.30,0.3)
+            mc.start_right(0.1)
+    if case == state_zigzag["left"]:
+        dY=-0.4
+        dZ=0
+        mc.right(0.30,0.3)
+        #mc.move_distance(0,dY,dZ,0.3)
+        mc.start_left(0.1)
+    edge = False
+
+
+    while(edge == False):
+        if (is_edge_2()):
+            edge=True
+            print('Edge 1 detected!')
+            x1=position_estimate[0]
+            y1=position_estimate[1]
+            #time.sleep(1)
+    """
+    x1=position_estimate[0]
+    y1=position_estimate[1]
+    print('x1 ',x1,'  ','y1 ',y1)
+    
+    while(is_edge_3() == True):
+        print('still close')
+    
+    mc.start_forward(0.03)
+
+    while(edge == False):
+        if (is_edge_3()):
+            edge=True
+            print('Edge 2 detected!')
+            x2=position_estimate[0]
+            y2=position_estimate[1]
+            #time.sleep(1)
+    
+    print('x1 ',x2,'  ','y1 ',y2)
+    dX=-0.15
+    dY=0
+    if case == state_zigzag["right"]:
+        dY=y1-y2-0.15
+    if case == state_zigzag["left"]:
+        dY=0.15-(y2-y1)
+    
+    mc.move_distance(dX,dY,0)
+
+    x0=x2+dX
+    y0=y2+dY
+    goal_x=position_estimate[0]
+    goal_y=position_estimate[1]
+    print('x0: ',x0,'y0: ',y0)
+    print('goal_x: ',goal_x,'goal_y: ',goal_y)
+
+
 
 # ------------------------------------------------------------------------------------------------------------
 
@@ -526,8 +624,8 @@ if __name__ == '__main__':
 
                 while(1):
                     #print(obstacle_avoidance())
-                    if (obstacle_avoidance() == False):
-                    #if True:
+                    #if (obstacle_avoidance() == False):
+                    if True:
                         print('obs false')
                         #if no obstacle is being detected let zigzag manage the speeds
                         if case != state_zigzag['arrived']:
