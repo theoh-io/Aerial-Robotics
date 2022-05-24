@@ -10,7 +10,6 @@ from zipfile import ZIP_BZIP2
 import numpy as np
 import os
 import matplotlib.pyplot as plt
-from regex import R
 
 import cflib.crtp
 from cflib.crazyflie import Crazyflie
@@ -33,6 +32,8 @@ START_POS_X = 0
 START_POS_Y = 0
 GOAL_ZONE_X= 0.5
 START_EXPLORE_X = GOAL_ZONE_X-START_POS_X
+#variables needed for obstacle avoidance
+VELOCITY = 0.2
 
 TIME_EXPLORE= 50
 
@@ -80,7 +81,7 @@ def log_pos_callback(timestamp, data, logconf):
     position_estimate[3] = data['range.zrange']
 
 def stab_log_data(timestamp, data, logconf):
-    """Callback froma the log API when data arrives"""
+    """Callback from the log API when data arrives"""
     #print('[%d][%s]: %s' % (timestamp, logconf.name, data))
     global count
     
@@ -103,47 +104,6 @@ def store_log_data():
 
 # -------------------------------------------------------------------------------------------------------------
 
-def move_linear_simple(scf):
-    with MotionCommander(scf, default_height=DEFAULT_HEIGHT) as mc:
-        time.sleep(1)
-        mc.forward(0.5)
-
-        #or mc.back()
-        time.sleep(1)
-        mc.turn_left(180)
-        time.sleep(1)
-        mc.forward(0.5)
-        time.sleep(1)
-
-
-def take_off_simple(scf):
-    with MotionCommander(scf, default_height=DEFAULT_HEIGHT) as mc:
-        #mc.up(0.3) # to go even higher then the default height or change default height
-        time.sleep(3)
-        mc.stop()
-
-def move_box_limit(scf):
-    with MotionCommander(scf, default_height=DEFAULT_HEIGHT) as mc:
-        
-        body_x_cmd = 0.2
-        body_y_cmd = 0.1
-        max_vel = 0.2
-
-        while (1):
-            if position_estimate[0] > BOX_LIMIT_X-START_POS_X:
-                body_x_cmd=-max_vel
-            elif position_estimate[0] < -START_POS_X:
-                body_x_cmd=max_vel
-            if position_estimate[1] > BOX_LIMIT_Y-START_POS_Y:
-                body_y_cmd=-max_vel
-            elif position_estimate[1] < -START_POS_Y:
-                body_y_cmd=max_vel
-
-            mc.start_linear_motion(body_x_cmd, body_y_cmd, 0)
-
-            time.sleep(0.1)
-
-
 def zigzag_nonblocking():
     global case, x_offset, yaw_landing, state_zigzag
     #to test way_back
@@ -159,7 +119,7 @@ def zigzag_nonblocking():
         mc.start_left()
         print('left')
     elif (case==state_zigzag["left"] and position_estimate[1] > BOX_LIMIT_Y-START_POS_Y) :
-        print("!!!!!!!!!!!!reached bbox")
+        print("!!!!!!!!!!!!reached bbox zigzag")
         case=state_zigzag["forward1"]
         print('forward 1')
         mc.forward(x_offset)
@@ -176,7 +136,7 @@ def zigzag_nonblocking():
 
     #Temporaire: condition d'arret si la limite de l'arene en x 
     if position_estimate[0] > BOX_LIMIT_X - START_POS_X:
-        print("Limite arene x reached")
+        print("Seulement un edge détecté, pas le deuxième, limite arene x reached, let's land for safety")
         mc.land()
         time.sleep(1)
         case =state_zigzag["arrived"]
@@ -469,7 +429,7 @@ def is_edge_2():
         y1=logs_copy2[len(logs_copy2)-100+idx_1,1]/1000
 
         if abs(z_1-z_2) > MIN_EDGE2:
-            print('abs edge 2: ',abs(z_1-z_2))
+            print('abs edge 2: ', abs(z_1-z_2))
             #print('z1: ',z_1)
             #print('z2: ',z_2)
             #print('idx_1: ',idx_1)
@@ -527,6 +487,7 @@ def find_platform_center():
     if case == state_zigzag["right"]:
         mc.start_left()
         while(position_estimate[1]<(y1-0.15)):
+            continue
             print('going left ',position_estimate[1],' ',y1)
         x2_before=position_estimate[0]
         y2_before=position_estimate[1]
@@ -534,6 +495,7 @@ def find_platform_center():
     if case == state_zigzag["left"]:
         mc.start_right()
         while(position_estimate[1]>y1+0.15):
+            continue
             print('going right ',position_estimate[1],' ',y1)
         x2_before=position_estimate[0]
         y2_before=position_estimate[1]
@@ -570,7 +532,7 @@ def find_platform_center():
             """
             
         if position_estimate[0] > BOX_LIMIT_X - START_POS_X:
-            print("Limite arene x reached")
+            print("No center found, limite arene x reached, let's land for safety")
             mc.land()
             case =state_zigzag["arrived"]
             return
@@ -589,9 +551,9 @@ def find_platform_center():
     goal_x=position_estimate[0]
     goal_y=position_estimate[1]
 
-    time.sleep(2)
+    time.sleep(1)
     mc.land()
-    case =state_zigzag["arrived"]
+    case = state_zigzag["arrived"]
 
     x0=x2+dX
     y0=y2+dY
@@ -655,8 +617,7 @@ if __name__ == '__main__':
                 #variables needed for zigzag
                 case=state_zigzag["start"]
                 x_offset=0.25 #compute_offset() test with 30cm
-                #variables needed for obstacle avoidance
-                VELOCITY = 0.2
+                
                 pos_estimate_before = 0
                 yaw_landing=0
                 velocity_y = 0
@@ -669,15 +630,15 @@ if __name__ == '__main__':
                 from_left =0
                 from_right =0
 
-
                 while(1):
                     #print(obstacle_avoidance())
-                    #if (obstacle_avoidance() == False):
+                    #if (not(obstacle_avoidance())):
                     if True:
-                        print('obs false')
+                        #print('obs false')
                         #if no obstacle is being detected let zigzag manage the speeds
                         if case != state_zigzag['arrived']:
-                            [edge,x_edge,y_edge] = is_edge_2()
+                            if case != state_zigzag['start']:
+                                [edge,x_edge,y_edge] = is_edge_2()
                             zigzag_nonblocking()
                         else:
                             #regulate_yaw(mc, yaw_landing, position_estimate[3]) #compensate the error in yaw during landing
