@@ -27,12 +27,12 @@ START_EXPLORE_X = GOAL_ZONE_X-START_POS_X
 
 TIME_EXPLORE = 3
 
-RESOLUTION_GRID=20
+RESOLUTION_GRID=0.20 # m
+MIN_DISTANCE_OCCUP_GRIG = 3  # m
 
 ## A* star or global nav variables
 start = [START_POS_X, START_POS_Y] # to get before the start of the drone
-goal = [100,100] # to get from the zranger detection, to get when landing on base done
-len_x, len_y = (500, 200)
+goal = [1,1] # to get from the zranger detection, to get when landing on base done
 
 deck_attached_event = Event()
 
@@ -95,8 +95,40 @@ def compute_offset():
     print(offset)
     return offset
 
-def pos_to_grid(position_estimate_x,position_etsimate_y):
-    return (int(position_estimate_x/RESOLUTION_GRID), int(position_etsimate_y/RESOLUTION_GRID))
+def posestimation_to_grid(position_estimate_x,position_estimate_y):
+    return (int((position_estimate_x+START_POS_X)/RESOLUTION_GRID), int((position_estimate_y+START_POS_Y)/RESOLUTION_GRID))
+
+def obstacle_mapping(range_left, range_right, range_front, range_back, occupancy_grid, pos_x, pos_y):
+
+    if(range_front < MIN_DISTANCE_OCCUP_GRIG):
+        pos_obsf=(pos_x+range_front)
+        if(pos_obsf>BOX_LIMIT_X-START_POS_X):
+            print("Obstacle mapped at front")
+            idx_x,idx_y = posestimation_to_grid(pos_obsf,pos_y)
+            occupancy_grid[idx_x,idx_y]=1
+        
+    if(range_back < MIN_DISTANCE_OCCUP_GRIG):
+        pos_obsb=(pos_x-range_back)
+        if(pos_obsb<-START_POS_X):
+            print("Obstacle mapped at back")
+            idx_x,idx_y = posestimation_to_grid(pos_obsb,pos_y)
+            occupancy_grid[idx_x,idx_y]=1
+
+    if(range_left < MIN_DISTANCE_OCCUP_GRIG):
+        pos_obsl=pos_y+range_left
+        if(pos_obsl>BOX_LIMIT_Y-START_POS_Y):
+            print("Obstacle mapped at left")
+            idx_x,idx_y = posestimation_to_grid(pos_x,pos_obsl)
+            occupancy_grid[idx_x,idx_y]=1
+
+    if(range_right < MIN_DISTANCE_OCCUP_GRIG):
+        pos_obsr=pos_y-range_right
+        if(pos_obsr<-START_POS_Y):
+            print("Obstacle mapped at right")
+            idx_x, idx_y = posestimation_to_grid(pos_x,pos_obsr)
+            occupancy_grid[idx_x,idx_y]=1
+            
+    return occupancy_grid
 
 if __name__ == '__main__':
 
@@ -128,21 +160,29 @@ if __name__ == '__main__':
             print(start_time)
             goal_x=0
             goal_y=0
+            len_x, len_y = (BOX_LIMIT_X, BOX_LIMIT_Y)
             occupancy_grid = np.zeros((len_x,len_y))
             explored_list = []
             case=-1
             x_offset=0.25
 
             while(1):
-                print(time.time()-start_time)
                 if case != 5:
+                    #explored list filling
                     if not((pos_to_grid(position_estimate[0],position_estimate[1])) in explored_list):
                         explored_list.append(pos_to_grid(position_estimate[0],position_estimate[1]))
-                        
+
+                    #occupancy_grid filling
+                    occupancy_grid = obstacle_mapping(multiranger.left, multiranger.right, multiranger.front, multiranger.back, occupancy_grid, position_estimate[0], position_estimate[1])
+
                     zigzag_nonblocking()
+
                 else:
                     go_back()
+
+                print(explored_list)
                 time.sleep(1)
+
                 #TO BE ADDED
                 #if(is_close()):
                 #    obstacle avoidance();
