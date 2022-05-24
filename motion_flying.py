@@ -38,6 +38,8 @@ VELOCITY = 0.2
 
 TIME_EXPLORE= 15
 
+EPSYLON=0.001
+
 #to be added in parser
 verbose = True
 state_zigzag={'start':-1, 'left':0, 'forward1':1, 'right':2, 'forward2':3, 'back2left':4, 'arrived':5}
