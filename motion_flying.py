@@ -27,15 +27,14 @@ URI = uri_helper.uri_from_env(default='radio://0/80/2M/E7E7E7E714')
 # Unit: meter
 DEFAULT_HEIGHT = 0.5 #1
 FOV_ZRANGER=math.radians(2.1)
-BOX_LIMIT_X = 1.5 #5
+BOX_LIMIT_X = 2 #5
 BOX_LIMIT_Y = 0.7 #3
 START_POS_X = 0
 START_POS_Y = 0
-GOAL_ZONE_X= 0.5
+GOAL_ZONE_X= 0.8
 START_EXPLORE_X = GOAL_ZONE_X-START_POS_X
 
 TIME_EXPLORE= 50
-
 
 #to be added in parser
 verbose = True
@@ -526,15 +525,17 @@ def find_platform_center():
 
     if case == state_zigzag["right"]:
         mc.start_left()
-        while(position_estimate[1]<(y1-0.15)):
+        while(position_estimate[1]<(y1-0.18)):
             print('going left ',position_estimate[1],' ',y1)
+            continue
         x2_before=position_estimate[0]
         y2_before=position_estimate[1]
 
     if case == state_zigzag["left"]:
         mc.start_right()
-        while(position_estimate[1]>y1+0.15):
+        while(position_estimate[1]>y1+0.18):
             print('going right ',position_estimate[1],' ',y1)
+            continue
         x2_before=position_estimate[0]
         y2_before=position_estimate[1]
 
@@ -585,12 +586,14 @@ def find_platform_center():
     
     #mc.move_distance(dX,dY,0)
 
-    mc.forward(0.05)
+    mc.forward(0.02)
     goal_x=position_estimate[0]
     goal_y=position_estimate[1]
 
     time.sleep(2)
-    mc.land()
+    #default velocity 
+    # VELOCITY = 0.2
+    mc.land(velocity=0.1)
     case =state_zigzag["arrived"]
 
     x0=x2+dX
@@ -672,8 +675,8 @@ if __name__ == '__main__':
 
                 while(1):
                     #print(obstacle_avoidance())
-                    #if (obstacle_avoidance() == False):
-                    if True:
+                    if (obstacle_avoidance() == False):
+                    #if True:
                         print('obs false')
                         #if no obstacle is being detected let zigzag manage the speeds
                         if case != state_zigzag['arrived']:
