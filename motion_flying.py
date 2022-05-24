@@ -161,18 +161,22 @@ def zigzag_nonblocking():
         mc.start_forward()
         print('start')
     if (case==state_zigzag["start"] and position_estimate[0]>START_EXPLORE_X) or case == state_zigzag["back2left"]:
+        regulate_yaw(mc, 0, position_estimate[4])
         case=state_zigzag["left"]
         mc.start_left()
         print('left')
     elif (case==state_zigzag["left"] and position_estimate[1] > BOX_LIMIT_Y-START_POS_Y) :
+        regulate_yaw(mc, 0, position_estimate[4])
         case=state_zigzag["forward1"]
         print('forward 1')
         mc.forward(x_offset)
     elif case == state_zigzag["forward1"]:
+        regulate_yaw(mc, 0, position_estimate[4])
         case=state_zigzag["right"]
         print('right')
         mc.start_right()
     elif case == state_zigzag["right"] and  position_estimate[1] < -START_POS_Y:
+        regulate_yaw(mc, 0, position_estimate[4])
         case = state_zigzag["forward2"]
         print('forward 2')
         mc.forward(x_offset)
@@ -196,7 +200,7 @@ def zigzag_nonblocking():
         goal_y=position_estimate[1]
         mc.land()
         time.sleep(1)
-        #mc.take_off(DEFAULT_HEIGHT)
+        mc.take_off(DEFAULT_HEIGHT)
         #clean_takeoff(mc, [goal_x, goal_y, yaw_landing])
         case =state_zigzag["arrived"] #to get out of zigzag
 
@@ -248,18 +252,18 @@ def clean_takeoff(mc, init_coord=None):
         time.sleep(1)
         return init_x, init_y
     #apres le landing on veut controler la position après le redécollage
-    # else:
-    #     print("in regulate re-takeoff")
-    #     time.sleep(1)
-    #     curr_x = position_estimate[0]
-    #     curr_y = position_estimate[1]
-    #     curr_yaw = position_estimate[3]
-    #     print("current pos (x, y, yaw):", curr_x, curr_y, curr_yaw)
-    #     print("before landing pos (x, y, yaw):", init_coord[0], init_coord[1], init_coord[2])
-    #     #regulate_x(mc, init_coord[0], curr_x)
-    #     #regulate_y(mc, init_coord[1], curr_y)
-    #     regulate_yaw(mc, init_coord[2], curr_yaw)
-    #     return init_x, init_y, init_yaw
+    else:
+        print("in regulate re-takeoff")
+        time.sleep(1)
+        curr_x = position_estimate[0]
+        curr_y = position_estimate[1]
+        curr_yaw = position_estimate[4]
+        print("current pos (x, y, yaw):", curr_x, curr_y, curr_yaw)
+        print("before landing pos (x, y, yaw):", init_coord[0], init_coord[1], init_coord[2])
+        #regulate_x(mc, init_coord[0], curr_x)
+        #regulate_y(mc, init_coord[1], curr_y)
+        regulate_yaw(mc, init_coord[2], curr_yaw)
+        return init_x, init_y
 
 def regulate_x(mc, init_x, curr_x):
     print("in regulate_x")
@@ -694,7 +698,7 @@ if __name__ == '__main__':
                         else:
                             #regulate_yaw(mc, yaw_landing, position_estimate[3]) #compensate the error in yaw during landing
                             #print("yaw after regulate:", position_estimate[3])
-                            #go_back()
+                            go_back()
                             logconf.stop()
                             store_log_data()
                             break
