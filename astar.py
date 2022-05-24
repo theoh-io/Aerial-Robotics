@@ -219,8 +219,9 @@ def find_path(start, goal, occupancy_grid, len_x, len_y, explored_list):
     visitedNodes = np.array(visitedNodes).reshape(-1, 2).transpose()
     return path
 
-
+#np array
 occupancy_grid = np.zeros((len_x,len_y))
+
 occupancy_grid[2,1] = 1
 occupancy_grid[3,1] = 1
 # occupancy_grid[4,1] = 1
@@ -232,7 +233,9 @@ occupancy_grid[3,1] = 1
 # occupancy_grid[7,3] = 1
 # occupancy_grid[8,3] = 1
 # occupancy_grid[9,3] = 1
-explored_list = {(0,1), (0,2), (0,3), (0,4), (1,1), (1,2), (1,3), (1,4), (2,2), (2,3), (2,4),(3,2), (3,3), (3,4), (4,3), (4,4),(5,3),(5,4)}
+
+# dict of tuple
+explored_list = [(0,1), (0,2), (0,3), (0,4), (1,1), (1,2), (1,3), (1,4), (2,2), (2,3), (2,4),(3,2), (3,3), (3,4), (4,3), (4,4), (5,3), (5,4)]
 
 path=find_path(start, goal, occupancy_grid, len_x+1, len_y+1, explored_list)
 print(path)
