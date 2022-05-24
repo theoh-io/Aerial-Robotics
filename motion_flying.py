@@ -10,7 +10,7 @@ from zipfile import ZIP_BZIP2
 import numpy as np
 import os
 import matplotlib.pyplot as plt
-from regex import R
+#from regex import R
 
 import cflib.crtp
 from cflib.crazyflie import Crazyflie
@@ -28,13 +28,15 @@ URI = uri_helper.uri_from_env(default='radio://0/80/2M/E7E7E7E714')
 DEFAULT_HEIGHT = 0.5 #1
 FOV_ZRANGER=math.radians(2.1)
 BOX_LIMIT_X = 1.5 #5
-BOX_LIMIT_Y = 0.7 #3
+BOX_LIMIT_Y = 0.15 #3
 START_POS_X = 0
 START_POS_Y = 0
 GOAL_ZONE_X= 0.5
 START_EXPLORE_X = GOAL_ZONE_X-START_POS_X
 
-TIME_EXPLORE= 50
+TIME_EXPLORE= 15
+
+EPSYLON=0.001
 
 
 #to be added in parser
@@ -52,8 +54,8 @@ deck_attached_event = Event()
 logging.basicConfig(level=logging.ERROR)
 
 # Logs global variables
-position_estimate = [0, 0, 0, 0]
-logs = np.zeros([100000,4])
+position_estimate = [0, 0, 0, 0, 0]
+logs = np.zeros([100000,5])
 count = 0
 
 # Edge detection global variables
@@ -78,6 +80,7 @@ def log_pos_callback(timestamp, data, logconf):
     position_estimate[1] = data['stateEstimate.y']
     position_estimate[2] = data['stateEstimate.z']
     position_estimate[3] = data['range.zrange']
+    position_estimate[4] = data['stateEstimate.yaw']
 
 def stab_log_data(timestamp, data, logconf):
     """Callback froma the log API when data arrives"""
@@ -88,6 +91,9 @@ def stab_log_data(timestamp, data, logconf):
     for idx, i in enumerate(list(data)):
         if idx < 3:
             logs[count][idx] = data[i]*1000
+        if idx == 4:
+            #multiply yaw by 100
+            logs[count][idx] = data[i]*100
         else:
             logs[count][idx] = data[i]
     count += 1
@@ -159,7 +165,6 @@ def zigzag_nonblocking():
         mc.start_left()
         print('left')
     elif (case==state_zigzag["left"] and position_estimate[1] > BOX_LIMIT_Y-START_POS_Y) :
-        print("!!!!!!!!!!!!reached bbox")
         case=state_zigzag["forward1"]
         print('forward 1')
         mc.forward(x_offset)
@@ -184,7 +189,7 @@ def zigzag_nonblocking():
     #Temporaire condition de retour basé sur le temps de vol
     if(time.time()-start_time>TIME_EXPLORE):
         print(" Exploration time exceeded")
-        yaw_landing=position_estimate[2]
+        yaw_landing=position_estimate[4]
         print("yaw during landing", yaw_landing)
         #must record goal pos before landing because variation can occur
         goal_x=position_estimate[0]
@@ -229,20 +234,19 @@ def clean_takeoff(mc, init_coord=None):
     if init_coord is None:
         time.sleep(0.1)
         #nécéssaire ???
-        mc._reset_position_estimator()
-        time.sleep(0.2)
+        #mc._reset_position_estimator()
         init_x = START_POS_X+position_estimate[0]
         init_y = START_POS_Y+position_estimate[1]
-        init_yaw = position_estimate[3]
+        #init_yaw = 0    
         print("Start pos (x, y):", init_x, init_y)
-        print("Start yaw:", position_estimate[3]-init_yaw)
+        print("Start yaw:", position_estimate[4])
         regulate_x(mc, START_POS_X, init_x)
-        time.sleep(0.1)
+        time.sleep(1)
         regulate_y(mc, START_POS_Y, init_y)
-        time.sleep(0.1)
-        regulate_yaw(mc, init_yaw, position_estimate[3])
-        time.sleep(0.1)
-        return init_x, init_y, init_yaw
+        time.sleep(1)
+        regulate_yaw(mc, 0, position_estimate[4])
+        time.sleep(1)
+        return init_x, init_y
     #apres le landing on veut controler la position après le redécollage
     # else:
     #     print("in regulate re-takeoff")
@@ -260,9 +264,9 @@ def clean_takeoff(mc, init_coord=None):
 def regulate_x(mc, init_x, curr_x):
     print("in regulate_x")
     error_x=curr_x-init_x
-    if error_x>0:
+    if error_x>EPSYLON:
         mc.back(error_x)
-    if error_x<0:
+    if error_x<-EPSYLON:
         mc.forward(-error_x)
     else:
         print("zero_error")
@@ -270,9 +274,9 @@ def regulate_x(mc, init_x, curr_x):
 def regulate_y(mc, init_y, curr_y):
     print("in regulate_y")
     error_y=curr_y-init_y
-    if error_y>0:
+    if error_y>EPSYLON:
         mc.right(error_y)
-    if error_y<0:
+    if error_y<-EPSYLON:
         mc.left(-error_y)
     else:
         print("zero_error")
@@ -282,10 +286,12 @@ def regulate_y(mc, init_y, curr_y):
 # regulate yaw to init angle
 def regulate_yaw(mc, init_yaw, curr_yaw):
     print("in regulate yaw")
-    if init_yaw - curr_yaw >= 0:
+    if init_yaw - curr_yaw >= EPSYLON:
         mc.turn_left(init_yaw - curr_yaw)
-    if init_yaw - curr_yaw < 0:
+    if init_yaw - curr_yaw < -EPSYLON:
         mc.turn_right(curr_yaw - init_yaw)
+    else:
+        print("zero error")
 
 def is_close(range):
     MIN_DISTANCE = 0.5  # m
@@ -634,6 +640,7 @@ if __name__ == '__main__':
         logconf.add_variable('stateEstimate.y', 'float')
         logconf.add_variable('stateEstimate.z', 'float')
         logconf.add_variable('range.zrange', 'uint16_t')
+        logconf.add_variable('stateEstimate.yaw', 'float')
         scf.cf.log.add_config(logconf)
         logconf.data_received_cb.add_callback(log_pos_callback)
         logconf.data_received_cb.add_callback(stab_log_data)
@@ -668,7 +675,10 @@ if __name__ == '__main__':
                 from_back =0
                 from_left =0
                 from_right =0
-
+                #temporary intentional disturbance to regulate yaw
+                # time.sleep(1)
+                # mc.turn_left(7)
+                clean_takeoff(mc)
 
                 while(1):
                     #print(obstacle_avoidance())
@@ -677,8 +687,10 @@ if __name__ == '__main__':
                         print('obs false')
                         #if no obstacle is being detected let zigzag manage the speeds
                         if case != state_zigzag['arrived']:
-                            [edge,x_edge,y_edge] = is_edge_2()
+                            #[edge,x_edge,y_edge] = is_edge_2()
                             zigzag_nonblocking()
+                            #print("yaw :", position_estimate[4])
+                            #regulate_yaw(mc,0, position_estimate[4])
                         else:
                             #regulate_yaw(mc, yaw_landing, position_estimate[3]) #compensate the error in yaw during landing
                             #print("yaw after regulate:", position_estimate[3])
