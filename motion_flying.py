@@ -457,25 +457,25 @@ def is_edge_2():
     MIN_EDGE2 = 50  # mm
     logs_copy2=logs[~np.all(logs == 0, axis=1)]
 
-    if len(logs_copy2) > 90:
+    if len(logs_copy2) > 100:
         #z_2=logs_copy2[-1,3]
         #z_1=logs_copy2[-50,3]
         
-        z_2=np.max(logs_copy2[-90:,3])
-        idx_2=np.argmax(logs_copy2[-90:,3])
-        z_1=np.min(logs_copy2[-90:,3])
-        idx_1=np.argmin(logs_copy2[-90:,3])
-        x1=logs_copy2[len(logs_copy2)-90+idx_1,0]/1000
-        y1=logs_copy2[len(logs_copy2)-90+idx_1,1]/1000
+        z_2=np.max(logs_copy2[-100:,3])
+        idx_2=np.argmax(logs_copy2[-100:,3])
+        z_1=np.min(logs_copy2[-100:,3])
+        idx_1=np.argmin(logs_copy2[-100:,3])
+        x1=logs_copy2[len(logs_copy2)-100+idx_1,0]/1000
+        y1=logs_copy2[len(logs_copy2)-100+idx_1,1]/1000
 
         if abs(z_1-z_2) > MIN_EDGE2:
             print('abs edge 2: ',abs(z_1-z_2))
-            print('z1: ',z_1)
-            print('z2: ',z_2)
-            print('idx_1: ',idx_1)
-            print('idx_2: ',idx_2)
-            print('x1: ',x1)
-            print('y1: ',y1)
+            #print('z1: ',z_1)
+            #print('z2: ',z_2)
+            #print('idx_1: ',idx_1)
+            #print('idx_2: ',idx_2)
+            #print('x1: ',x1)
+            #print('y1: ',y1)
             return True, x1, y1
         else:
             return False, 0, 0
@@ -491,20 +491,28 @@ def find_platform_center():
     x1=x_edge
     y1=y_edge
     
+    """
     x1_bis=position_estimate[0]
     y1_bis=position_estimate[1]
 
     print(x1,' ',x1_bis)
     print(y1,' ',y1_bis)
+
+    plt.figure()
     plt.axis('equal')
     plt.scatter([x1,x1_bis],[y1,y1_bis])
+    plt.annotate('x1',(x1,y1))
+    plt.annotate('x1_bis',(x1_bis,y1_bis))
     plt.savefig('first edge')
-    
+    """
+
     if case == state_zigzag["right"]:
-        mc.right(0.20)
+        mc.right(0.25)
+        time.sleep(1)
 
     if case == state_zigzag["left"]:
-        mc.left(0.20)
+        mc.left(0.25)
+        time.sleep(1)
 
     """
     while(edge == True):
@@ -513,17 +521,22 @@ def find_platform_center():
     """
     
     #logs = np.zeros([100000,4])
-    mc.back(0.35)
+    mc.back(0.4)
+    time.sleep(1)
 
     if case == state_zigzag["right"]:
         mc.start_left()
-        while(position_estimate[1]<y1):
+        while(position_estimate[1]<(y1-0.15)):
             print('going left ',position_estimate[1],' ',y1)
+        x2_before=position_estimate[0]
+        y2_before=position_estimate[1]
 
     if case == state_zigzag["left"]:
         mc.start_right()
-        while(position_estimate[1]>y1):
+        while(position_estimate[1]>y1+0.15):
             print('going right ',position_estimate[1],' ',y1)
+        x2_before=position_estimate[0]
+        y2_before=position_estimate[1]
 
     mc.start_forward()
     print('going forward')
@@ -532,20 +545,29 @@ def find_platform_center():
     while(edge == False):
         [edge,x_edge,y_edge]=is_edge_2()
         if (edge==True):
+            """
             print('Edge 2 detected!')
             x2_bis=position_estimate[0]
             y2_bis=position_estimate[1]
+            """
             x2=x_edge
             y2=y_edge
-            print(x2,' ',x2_bis)
-            print(y2,' ',y2_bis)
-            #time.sleep(1)
 
-            print(x1,' ',x1_bis)
-            print(y1,' ',y1_bis)
+            """
+            print('x1: ',x1,'x1_bis: ',x1_bis)
+            print('y1: ',y1,'y1_bis: ',y1_bis)
+            print('x2: ',x2,'x2_bis: ',x2_bis)
+            print('y2: ',y2,'y2_bis: ',y2_bis)
+
+            plt.figure()
             plt.axis('equal')
             plt.scatter([x1,x1_bis,x2,x2_bis],[y1,y1_bis,y2,y2_bis])
+            plt.annotate('x1',(x1,y1))
+            plt.annotate('x1_bis',(x1_bis,y1_bis))
+            plt.annotate('x2',(x2,y2))
+            plt.annotate('x2_bis',(x2_bis,y2_bis))
             plt.savefig('first edge & second edge')
+            """
             
         if position_estimate[0] > BOX_LIMIT_X - START_POS_X:
             print("Limite arene x reached")
@@ -555,39 +577,41 @@ def find_platform_center():
 
     dX=0.15
     dY=0
-    if case == state_zigzag["right"]:
-        dY=y1-y2-0.15
-    if case == state_zigzag["left"]:
-        dY=-(y1-y2)-0.15
-    
-    mc.move_distance(dX,dY,0)
-    
-    x0=x2+dX
-    y0=y2+dY
-    print('x0: ',x0,'y0: ',y0)
-    dx_values = [x2, x0]
-    dy_values = [y2, y0]
-    plt.axis('equal')
-    #plt.plot(dx_values, dy_values, 'bo', linestyle="--")
-    plt.scatter([x1,x2,x0],[y1,y2,y0])
-    rectangle = plt.Rectangle((x0,y0), 30, 30)
-    plt.gca().add_patch(rectangle)
-    plt.savefig('platform center')
 
+    #if case == state_zigzag["right"]:
+    #    dY=y1-y2-0.15
+    #if case == state_zigzag["left"]:
+    #    dY=-(y1-y2)-0.15
+    
+    #mc.move_distance(dX,dY,0)
+
+    mc.forward(0.05)
     goal_x=position_estimate[0]
     goal_y=position_estimate[1]
-    print('goal_x: ',goal_x,'goal_y: ',goal_y)
-    
+
+    time.sleep(2)
     mc.land()
     case =state_zigzag["arrived"]
 
-    #dx_values = [x2, goal_x]
-    #dy_values = [y2, goal_y]
-    #plt.plot(dx_values, dy_values, 'bo', linestyle="--")
-    #plt.scatter([x1,x2,goal_x],[y1,y2,goal_y])
-    #plt.savefig('platform edges')
+    x0=x2+dX
+    y0=y2+dY
+    print('x1: ',x1,'y1: ',y1)
+    print('x2: ',x2,'y2: ',y2)
+    print('x0: ',x0,'y0: ',y0)
+    print('goal_x: ',goal_x,'goal_y: ',goal_y)
 
-    
+    plt.figure()
+    plt.axis('equal')
+    plt.plot(logs[:,0]/1000,logs[:,1]/1000)
+    plt.scatter([x1,x2_before,x2,x0,goal_x],[y1,y2_before,y2,y0,goal_y])
+    plt.annotate('x1',(x1,y1))
+    plt.annotate('x2_before',(x2_before,y2_before))
+    plt.annotate('x2',(x2,y2))
+    plt.annotate('x0',(x0,y0))
+    plt.annotate('goal',(goal_x,goal_y))
+    rectangle = plt.Rectangle((x0-0.15,y0-0.15), 0.30, 0.30,fill=None)
+    plt.gca().add_patch(rectangle)
+    plt.savefig('platform center')    
 
 # ------------------------------------------------------------------------------------------------------------
 
@@ -622,8 +646,7 @@ if __name__ == '__main__':
                 #little sleep needed for takeoff
                 time.sleep(0.1)
                 #function to reset the estimations
-                clean_takeoff(mc)
-    
+                #clean_takeoff(mc)
                 #variables used for the wayback test based on time
                 start_time=time.time()
                 print(start_time)
