@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 # import data in pandas dataframe (change the file name to your local file)
-data = pd.read_csv('logs/2022_05_24_17_26_02.csv', header = None)
+data = pd.read_csv('logs/2022_05_24_19_14_58.csv', header = None)
 print(data)
 
 # remove all-zeros rows
@@ -12,6 +12,7 @@ print(data)
 # plot all timeseries
 plt.figure()
 for i in data:
-    ax=data[i].plot()
-ax.legend(["x_axis", "y_axis", "z_axis", "z_ranger", "yaw"])
+    data[i].plot()
+    print(i)
 plt.show()
+#plt.savefig('Take off - Test velocity fast')
