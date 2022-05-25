@@ -6,7 +6,7 @@ from threading import Event
 from threading import Timer
 import math
 import numpy as np
-from astar import find_path
+#from astar import find_path
 import datetime as dt
 from zipfile import ZIP_BZIP2
 import os
@@ -29,19 +29,19 @@ URI = uri_helper.uri_from_env(default='radio://0/80/2M/E7E7E7E714')
 DEFAULT_HEIGHT = 0.5 #1
 
 FOV_ZRANGER=math.radians(2.1)
-BOX_LIMIT_X = 2 #5
-BOX_LIMIT_Y = 0.7 #3
+BOX_LIMIT_X = 4 #5
+BOX_LIMIT_Y = 1 #3
 
 START_POS_X = 0
 START_POS_Y = 0
-GOAL_ZONE_X= 0.8
+GOAL_ZONE_X= 1.5
 START_EXPLORE_X = GOAL_ZONE_X-START_POS_X
 THRESH_Y = 0.5
 #variables needed for obstacle avoidance
 VELOCITY = 0.2
 
 
-TIME_EXPLORE= 15
+TIME_EXPLORE= 20
 
 RESOLUTION_GRID=0.20 # m
 MIN_DISTANCE_OCCUP_GRIG = 3  # m
@@ -102,7 +102,7 @@ def stab_log_data(timestamp, data, logconf):
     for idx, i in enumerate(list(data)):
         if idx < 3:
             logs[count][idx] = data[i]*1000
-        if idx == 4:
+        elif idx == 4:
             #multiply yaw by 100
             logs[count][idx] = data[i]*100
         else:
@@ -188,10 +188,15 @@ def zigzag_nonblocking():
         #clean_takeoff(mc, [goal_x, goal_y, yaw_landing])
         #case =state_zigzag["arrived"] #to get out of zigzag
 
-def go_back(occupancy_grid,explored_list):
-    global goal_x, goal_y
-    path=find_path(start, goal, occupancy_grid, len_x+1, len_y+1, explored_list)
-    mc.land()
+def go_back():
+        global goal_x, goal_y
+        #first goes to 0 in x
+        dist_x=goal_x
+        mc.back(dist_x)
+        #goes to 0 in y
+        dist_y=goal_y
+        mc.right(dist_y)
+        mc.land()
 
 def compute_offset():
     offset=math.tan(FOV_ZRANGER)/DEFAULT_HEIGHT
@@ -515,6 +520,7 @@ def is_edge_2():
 
 def find_platform_center():
     global edge, case, logs, state_zigzag, position_estimate, x_edge, y_edge 
+    global goal_x, goal_y
 
     #x1=position_estimate[0]
     #y1=position_estimate[1]
@@ -556,7 +562,7 @@ def find_platform_center():
 
     if case == state_zigzag["right"]:
         mc.start_left()
-        while(position_estimate[1]<(y1-0.18)):
+        while(position_estimate[1]<(y1-0.15)):
             print('going left ',position_estimate[1],' ',y1)
             continue
         x2_before=position_estimate[0]
@@ -564,7 +570,7 @@ def find_platform_center():
 
     if case == state_zigzag["left"]:
         mc.start_right()
-        while(position_estimate[1]>y1+0.18):
+        while(position_estimate[1]>y1+0.15):
             print('going right ',position_estimate[1],' ',y1)
             continue
         x2_before=position_estimate[0]
@@ -722,11 +728,11 @@ if __name__ == '__main__':
                         #if no obstacle is being detected let zigzag manage the speeds
                         if case != state_zigzag['arrived']:
                             #explored list filling
-                            if not((pos_to_grid(position_estimate[0],position_estimate[1])) in explored_list):
-                                explored_list.append(pos_to_grid(position_estimate[0],position_estimate[1]))
+                            #if not((pos_to_grid(position_estimate[0],position_estimate[1])) in explored_list):
+                                #explored_list.append(pos_to_grid(position_estimate[0],position_estimate[1]))
 
                             #occupancy_grid filling
-                            occupancy_grid = obstacle_mapping(multiranger.left, multiranger.right, multiranger.front, multiranger.back, occupancy_grid, position_estimate[0], position_estimate[1])
+                            #occupancy_grid = obstacle_mapping(multiranger.left, multiranger.right, multiranger.front, multiranger.back, occupancy_grid, position_estimate[0], position_estimate[1])
 
                             if case != state_zigzag['start']:
                                 [edge,x_edge,y_edge] = is_edge_2()
