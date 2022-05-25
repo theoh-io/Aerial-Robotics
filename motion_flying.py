@@ -5,11 +5,13 @@ import time
 from threading import Event
 from threading import Timer
 import math
+import numpy as np
+from astar import find_path
 import datetime as dt
 from zipfile import ZIP_BZIP2
-import numpy as np
 import os
 import matplotlib.pyplot as plt
+
 
 import cflib.crtp
 from cflib.crazyflie import Crazyflie
@@ -25,9 +27,11 @@ URI = uri_helper.uri_from_env(default='radio://0/80/2M/E7E7E7E714')
 
 # Unit: meter
 DEFAULT_HEIGHT = 0.5 #1
+
 FOV_ZRANGER=math.radians(2.1)
 BOX_LIMIT_X = 1.5 #5
 BOX_LIMIT_Y = 0.7 #3
+
 START_POS_X = 0
 START_POS_Y = 0
 GOAL_ZONE_X= 1.5
@@ -36,19 +40,22 @@ THRESH_Y = 0.5
 #variables needed for obstacle avoidance
 VELOCITY = 0.2
 
+
 TIME_EXPLORE= 15
 
-EPSYLON=0.001
+RESOLUTION_GRID=0.20 # m
+MIN_DISTANCE_OCCUP_GRIG = 3  # m
 
+## A* star or global nav variables
+start = [START_POS_X, START_POS_Y] 
+goal = [1,1] # to get from the zranger detection, to get when landing on base done
+
+EPSYLON=0.001
 
 #to be added in parser
 verbose = True
 state_zigzag={'start':-1, 'left':0, 'forward1':1, 'right':2, 'forward2':3, 'back2left':4, 'arrived':5}
 
-## A* star or global nav variables
-start = [START_POS_X, START_POS_Y] # to get before the start of the drone
-goal = [100,100] # to get from the zranger detection, to get when landing on base done
-len_x, len_y = (500, 200)
 
 deck_attached_event = Event()
 
@@ -74,6 +81,7 @@ def param_deck_flow(_, value_str):
     else:
         print('Deck is NOT attached!')
 
+
 # Logs functions -------------------------------------------------------------------------------------------
 def log_pos_callback(timestamp, data, logconf):
     #print(data)
@@ -83,6 +91,7 @@ def log_pos_callback(timestamp, data, logconf):
     position_estimate[2] = data['stateEstimate.z']
     position_estimate[3] = data['range.zrange']
     position_estimate[4] = data['stateEstimate.yaw']
+
 
 def stab_log_data(timestamp, data, logconf):
     """Callback from the log API when data arrives"""
@@ -122,18 +131,22 @@ def zigzag_nonblocking():
         mc.start_forward()
         print('start')
     if (case==state_zigzag["start"] and position_estimate[0]>START_EXPLORE_X) or case == state_zigzag["back2left"]:
+        regulate_yaw(mc, 0, position_estimate[4])
         case=state_zigzag["left"]
         mc.start_left()
         print('left')
     elif (case==state_zigzag["left"] and position_estimate[1] > BOX_LIMIT_Y-START_POS_Y) :
+        regulate_yaw(mc, 0, position_estimate[4])
         case=state_zigzag["forward1"]
         print('forward 1')
         mc.forward(x_offset)
     elif case == state_zigzag["forward1"]:
+        regulate_yaw(mc, 0, position_estimate[4])
         case=state_zigzag["right"]
         print('right')
         mc.start_right()
     elif case == state_zigzag["right"] and  position_estimate[1] < -START_POS_Y:
+        regulate_yaw(mc, 0, position_estimate[4])
         case = state_zigzag["forward2"]
         print('forward 2')
         mc.forward(x_offset)
@@ -157,7 +170,7 @@ def zigzag_nonblocking():
         goal_y=position_estimate[1]
         mc.land()
         time.sleep(1)
-        #mc.take_off(DEFAULT_HEIGHT)
+        mc.take_off(DEFAULT_HEIGHT)
         #clean_takeoff(mc, [goal_x, goal_y, yaw_landing])
         case =state_zigzag["arrived"] #to get out of zigzag
 
@@ -175,20 +188,51 @@ def zigzag_nonblocking():
         #clean_takeoff(mc, [goal_x, goal_y, yaw_landing])
         #case =state_zigzag["arrived"] #to get out of zigzag
 
-def go_back():
+def go_back(occupancy_grid,explored_list):
     global goal_x, goal_y
-    #first goes to 0 in x
-    dist_x=goal_x
-    mc.back(dist_x)
-    #goes to 0 in y
-    dist_y=goal_y
-    mc.right(dist_y)
+    path=find_path(start, goal, occupancy_grid, len_x+1, len_y+1, explored_list)
     mc.land()
 
 def compute_offset():
     offset=math.tan(FOV_ZRANGER)/DEFAULT_HEIGHT
     #print(offset)
     return offset
+
+
+def posestimation_to_grid(position_estimate_x,position_estimate_y):
+    return (int((position_estimate_x+START_POS_X)/RESOLUTION_GRID), int((position_estimate_y+START_POS_Y)/RESOLUTION_GRID))
+
+def obstacle_mapping(range_left, range_right, range_front, range_back, occupancy_grid, pos_x, pos_y):
+
+    if(range_front < MIN_DISTANCE_OCCUP_GRIG):
+        pos_obsf=(pos_x+range_front)
+        if(pos_obsf>BOX_LIMIT_X-START_POS_X):
+            print("Obstacle mapped at front")
+            idx_x,idx_y = posestimation_to_grid(pos_obsf,pos_y)
+            occupancy_grid[idx_x,idx_y]=1
+        
+    if(range_back < MIN_DISTANCE_OCCUP_GRIG):
+        pos_obsb=(pos_x-range_back)
+        if(pos_obsb<-START_POS_X):
+            print("Obstacle mapped at back")
+            idx_x,idx_y = posestimation_to_grid(pos_obsb,pos_y)
+            occupancy_grid[idx_x,idx_y]=1
+
+    if(range_left < MIN_DISTANCE_OCCUP_GRIG):
+        pos_obsl=pos_y+range_left
+        if(pos_obsl>BOX_LIMIT_Y-START_POS_Y):
+            print("Obstacle mapped at left")
+            idx_x,idx_y = posestimation_to_grid(pos_x,pos_obsl)
+            occupancy_grid[idx_x,idx_y]=1
+
+    if(range_right < MIN_DISTANCE_OCCUP_GRIG):
+        pos_obsr=pos_y-range_right
+        if(pos_obsr<-START_POS_Y):
+            print("Obstacle mapped at right")
+            idx_x, idx_y = posestimation_to_grid(pos_x,pos_obsr)
+            occupancy_grid[idx_x,idx_y]=1
+            
+    return occupancy_grid
 
 def clean_takeoff(mc, init_coord=None): 
     #au début pas de coordonnées initiales
@@ -209,18 +253,18 @@ def clean_takeoff(mc, init_coord=None):
         time.sleep(1)
         return init_x, init_y
     #apres le landing on veut controler la position après le redécollage
-    # else:
-    #     print("in regulate re-takeoff")
-    #     time.sleep(1)
-    #     curr_x = position_estimate[0]
-    #     curr_y = position_estimate[1]
-    #     curr_yaw = position_estimate[3]
-    #     print("current pos (x, y, yaw):", curr_x, curr_y, curr_yaw)
-    #     print("before landing pos (x, y, yaw):", init_coord[0], init_coord[1], init_coord[2])
-    #     #regulate_x(mc, init_coord[0], curr_x)
-    #     #regulate_y(mc, init_coord[1], curr_y)
-    #     regulate_yaw(mc, init_coord[2], curr_yaw)
-    #     return init_x, init_y, init_yaw
+    else:
+        print("in regulate re-takeoff")
+        time.sleep(1)
+        curr_x = position_estimate[0]
+        curr_y = position_estimate[1]
+        curr_yaw = position_estimate[4]
+        print("current pos (x, y, yaw):", curr_x, curr_y, curr_yaw)
+        print("before landing pos (x, y, yaw):", init_coord[0], init_coord[1], init_coord[2])
+        #regulate_x(mc, init_coord[0], curr_x)
+        #regulate_y(mc, init_coord[1], curr_y)
+        regulate_yaw(mc, init_coord[2], curr_yaw)
+        return init_x, init_y
 
 def regulate_x(mc, init_x, curr_x):
     print("in regulate_x")
@@ -637,7 +681,6 @@ def find_platform_center():
     plt.gca().add_patch(rectangle)
     plt.savefig('platform center')    
 
-# ------------------------------------------------------------------------------------------------------------
 
 if __name__ == '__main__':
 
@@ -677,6 +720,12 @@ if __name__ == '__main__':
                 print(start_time)
                 goal_x=0
                 goal_y=0
+                
+                #variables needed for global nav
+                len_x, len_y = (BOX_LIMIT_X, BOX_LIMIT_Y)
+                occupancy_grid = np.zeros((len_x,len_y))
+                explored_list = []
+                
                 #variables needed for zigzag
                 case=state_zigzag["start"]
                 x_offset=0.25 #compute_offset() test with 30cm
@@ -700,6 +749,7 @@ if __name__ == '__main__':
                 # mc.turn_left(7)
                 clean_takeoff(mc)
 
+
                 while(1):
                     #print(obstacle_avoidance())
                     if (not(obstacle_avoidance())):
@@ -707,6 +757,13 @@ if __name__ == '__main__':
                         #print('obs false')
                         #if no obstacle is being detected let zigzag manage the speeds
                         if case != state_zigzag['arrived']:
+                            #explored list filling
+                            if not((pos_to_grid(position_estimate[0],position_estimate[1])) in explored_list):
+                                explored_list.append(pos_to_grid(position_estimate[0],position_estimate[1]))
+
+                            #occupancy_grid filling
+                            occupancy_grid = obstacle_mapping(multiranger.left, multiranger.right, multiranger.front, multiranger.back, occupancy_grid, position_estimate[0], position_estimate[1])
+
                             if case != state_zigzag['start']:
                                 [edge,x_edge,y_edge] = is_edge_2()
                             zigzag_nonblocking()
@@ -715,10 +772,11 @@ if __name__ == '__main__':
                         else:
                             #regulate_yaw(mc, yaw_landing, position_estimate[3]) #compensate the error in yaw during landing
                             #print("yaw after regulate:", position_estimate[3])
-                            #go_back()
+                            go_back()
                             logconf.stop()
                             store_log_data()
                             break
+                        print(explored_list)
                         time.sleep(1)
                     else:
                         print("obstacle av = True")
@@ -731,3 +789,4 @@ if __name__ == '__main__':
         #store_log_data()
 
         
+

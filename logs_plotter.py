@@ -12,7 +12,7 @@ print(data)
 # plot all timeseries
 plt.figure()
 for i in data:
-    data[i].plot()
-    print(i)
+    ax=data[i].plot()
+ax.legend(["x_axis", "y_axis", "z_axis", "z_ranger", "yaw"])
 plt.show()
 #plt.savefig('Take off - Test velocity fast')
