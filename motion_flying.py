@@ -437,12 +437,17 @@ def  obstacle_avoid_front_back():
         state = 2
         return True
 
-    if (is_close(multiranger.back) & (not from_front) & 0): #jamais pour le moment
+    if (is_close(multiranger.back) & (not from_front) & case==state_zigzag['arrived']): #jamais pour le moment
         print('state =1 back')
         from_back = 1
         if (state==1) :
             pos_estimate_before_y = position_estimate[1] #y pos left/right
-        velocity_left = - VELOCITY
+            if abs(pos_estimate_before_y - (-START_POS_Y)) > abs(pos_estimate_before_y - BOX_LIMIT_Y): # if distance plus grande a droite ? 
+                obstacle_at_left =1
+                velocity_left = - VELOCITY
+            else :
+                obstacle_at_right =1
+                velocity_left = VELOCITY
         velocity_front = 0
         state = 2
         return True
@@ -505,6 +510,7 @@ def  obstacle_avoid_front_back():
             obstacle_at_left =0
             obstacle_at_right =0
             pos_estimate_before_y =0
+            pos_estimate_before_x =0
             return False
         return True  #check this indent
     return False
