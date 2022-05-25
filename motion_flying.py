@@ -313,7 +313,7 @@ def is_close(range):
 
 def  obstacle_avoid_left_right():
     global velocity_front, velocity_left, pos_estimate_before_x, state, first_detection, no_detection, from_left, from_right, pos_estimate_before_y, obstacle_at_front,obstacle_at_back
-
+    global case
     
     if (is_close(multiranger.left) & (not (from_right or from_front or from_back)) & case==state_zigzag['left'] ):
         print('state =1 left') 
@@ -718,7 +718,7 @@ if __name__ == '__main__':
         with MotionCommander(scf, default_height=DEFAULT_HEIGHT) as mc:
             with Multiranger(scf) as multiranger:
                 #little sleep needed for takeoff
-                time.sleep(0.1)
+                time.sleep(1)
                 #function to reset the estimations
                 #clean_takeoff(mc)
                 #variables used for the wayback test based on time
@@ -755,12 +755,17 @@ if __name__ == '__main__':
                 # mc.turn_left(7)
                 clean_takeoff(mc)
 
+                #freq regulation of yaw
+                timestep=1
+                time_yaw=start_time
+
+
 
                 while(1):
                     #print(obstacle_avoidance())
                     if (not(obstacle_avoidance())):
                     #if True:
-                        #print('obs false')
+                        print('obs false')
                         #if no obstacle is being detected let zigzag manage the speeds
                         if case != state_zigzag['arrived']:
                             #explored list filling
@@ -773,8 +778,12 @@ if __name__ == '__main__':
                             if case != state_zigzag['start']:
                                 [edge,x_edge,y_edge] = is_edge_2()
                             zigzag_nonblocking()
-                            #print("yaw :", position_estimate[4])
-                            #regulate_yaw(mc,0, position_estimate[4])
+                            if(time.time()-time_yaw>timestep):
+                                print("yaw before regulate:", position_estimate[4])
+                                regulate_yaw(mc,0, position_estimate[4])
+                                print("yaw after regulate:", position_estimate[4])
+                                time_yaw=time.time()
+
                         else:
                             #regulate_yaw(mc, yaw_landing, position_estimate[3]) #compensate the error in yaw during landing
                             #print("yaw after regulate:", position_estimate[3])
@@ -782,8 +791,8 @@ if __name__ == '__main__':
                             logconf.stop()
                             store_log_data()
                             break
-                        print(explored_list)
-                        time.sleep(1)
+                        #print(explored_list)
+                        time.sleep(0.1)
                     else:
                         print("obstacle av = True")
                         #print(velocity_front, velocity_left)
