@@ -427,7 +427,7 @@ def  obstacle_avoid_front_back():
         from_front = 1
         if (state==1) :
             pos_estimate_before_y = position_estimate[1] #y pos left/right
-            if abs(pos_estimate_before_y - (-START_POS_Y)) > abs(pos_estimate_before_y - BOX_LIMIT_Y): # if distance plus grande a droite ? 
+            if abs(pos_estimate_before_y - (-START_POS_Y)) > abs(pos_estimate_before_y - (BOX_LIMIT_Y- START_POS_Y)): # if distance plus grande a droite ? 
                 obstacle_at_left =1
                 velocity_left = - VELOCITY
             else :
@@ -442,7 +442,7 @@ def  obstacle_avoid_front_back():
         from_back = 1
         if (state==1) :
             pos_estimate_before_y = position_estimate[1] #y pos left/right
-            if abs(pos_estimate_before_y - (-START_POS_Y)) > abs(pos_estimate_before_y - BOX_LIMIT_Y): # if distance plus grande a droite ? 
+            if abs(pos_estimate_before_y - (-START_POS_Y)) > abs(pos_estimate_before_y - (BOX_LIMIT_Y - START_POS_Y)): # if distance plus grande a droite ? 
                 obstacle_at_left =1
                 velocity_left = - VELOCITY
             else :
