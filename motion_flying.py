@@ -29,19 +29,18 @@ URI = uri_helper.uri_from_env(default='radio://0/80/2M/E7E7E7E714')
 DEFAULT_HEIGHT = 0.5 #1
 
 FOV_ZRANGER=math.radians(2.1)
-BOX_LIMIT_X = 4 #5
+BOX_LIMIT_X = 2 #5
 BOX_LIMIT_Y = 1 #3
-
 START_POS_X = 0
-START_POS_Y = 0
-GOAL_ZONE_X= 1.5
+START_POS_Y = 0.7
+GOAL_ZONE_X= 1
 START_EXPLORE_X = GOAL_ZONE_X-START_POS_X
 THRESH_Y = 0.5
 #variables needed for obstacle avoidance
 VELOCITY = 0.2
 
 
-TIME_EXPLORE= 20
+TIME_EXPLORE= 200
 
 RESOLUTION_GRID=0.20 # m
 MIN_DISTANCE_OCCUP_GRIG = 3  # m
@@ -130,6 +129,7 @@ def zigzag_nonblocking():
     if case==state_zigzag["start"]:
         mc.start_forward()
         print('start')
+        print(position_estimate[0])
     if (case==state_zigzag["start"] and position_estimate[0]>START_EXPLORE_X) or case == state_zigzag["back2left"]:
         regulate_yaw(mc, 0, position_estimate[4])
         case=state_zigzag["left"]
@@ -155,7 +155,7 @@ def zigzag_nonblocking():
 
     #Temporaire: condition d'arret si la limite de l'arene en x 
     if position_estimate[0] > BOX_LIMIT_X - START_POS_X:
-        print("Seulement un edge détecté, pas le deuxième, limite arene x reached, let's land for safety")
+        print("Limite arene x reached, let's land for safety")
         mc.land()
         time.sleep(1)
         case =state_zigzag["arrived"]
@@ -585,11 +585,11 @@ def find_platform_center():
     """
 
     if case == state_zigzag["right"]:
-        mc.right(0.25)
+        mc.right(0.40)
         time.sleep(1)
 
     if case == state_zigzag["left"]:
-        mc.left(0.25)
+        mc.left(0.40)
         time.sleep(1)
 
     """
@@ -604,16 +604,16 @@ def find_platform_center():
 
     if case == state_zigzag["right"]:
         mc.start_left()
-        while(position_estimate[1]<(y1-0.15)):
-            continue
+        while(position_estimate[1]<(y1-0.25)):
+            #pass
             print('going left ',position_estimate[1],' ',y1)
         x2_before=position_estimate[0]
         y2_before=position_estimate[1]
 
     if case == state_zigzag["left"]:
         mc.start_right()
-        while(position_estimate[1]>y1+0.15):
-            continue
+        while(position_estimate[1]>y1+0.25):
+            #pass
             print('going right ',position_estimate[1],' ',y1)
         x2_before=position_estimate[0]
         y2_before=position_estimate[1]
@@ -665,12 +665,14 @@ def find_platform_center():
     
     #mc.move_distance(dX,dY,0)
 
-    mc.forward(0.05)
+    mc.forward(0.15)
     goal_x=position_estimate[0]
     goal_y=position_estimate[1]
 
     time.sleep(1)
-    mc.land()
+    #mc.down(0.35)
+    #mc.stop()
+    mc.land(velocity=0.05)
     case = state_zigzag["arrived"]
 
     x0=x2+dX
@@ -726,7 +728,7 @@ if __name__ == '__main__':
                 #little sleep needed for takeoff
                 time.sleep(1)
                 #function to reset the estimations
-                #clean_takeoff(mc)
+                clean_takeoff(mc)
                 #variables used for the wayback test based on time
                 start_time=time.time()
                 print(start_time)
@@ -735,7 +737,7 @@ if __name__ == '__main__':
                 
                 #variables needed for global nav
                 len_x, len_y = (BOX_LIMIT_X, BOX_LIMIT_Y)
-                occupancy_grid = np.zeros((len_x,len_y))
+                #occupancy_grid = np.zeros((len_x,len_y))
                 explored_list = []
                 
                 #variables needed for zigzag
@@ -759,7 +761,7 @@ if __name__ == '__main__':
                 #temporary intentional disturbance to regulate yaw
                 # time.sleep(1)
                 # mc.turn_left(7)
-                clean_takeoff(mc)
+                # clean_takeoff(mc)
 
                 #freq regulation of yaw
                 timestep=1
@@ -771,7 +773,7 @@ if __name__ == '__main__':
                     #print(obstacle_avoidance())
                     if (not(obstacle_avoidance())):
                     #if True:
-                        print('obs false')
+                        #print('obs false')
                         #if no obstacle is being detected let zigzag manage the speeds
                         if case != state_zigzag['arrived']:
                             #explored list filling
@@ -784,16 +786,18 @@ if __name__ == '__main__':
                             if case != state_zigzag['start']:
                                 [edge,x_edge,y_edge] = is_edge_2()
                             zigzag_nonblocking()
+                            """
                             if(time.time()-time_yaw>timestep):
                                 print("yaw before regulate:", position_estimate[4])
                                 regulate_yaw(mc,0, position_estimate[4])
                                 print("yaw after regulate:", position_estimate[4])
                                 time_yaw=time.time()
+                            """
 
                         else:
                             #regulate_yaw(mc, yaw_landing, position_estimate[3]) #compensate the error in yaw during landing
                             #print("yaw after regulate:", position_estimate[3])
-                            go_back()
+                            #go_back()
                             logconf.stop()
                             store_log_data()
                             break
