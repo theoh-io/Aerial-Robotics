@@ -23,6 +23,8 @@ from cflib.utils.multiranger import Multiranger
 from cflib.crazyflie.syncLogger import SyncLogger
 from cflib.positioning.position_hl_commander import PositionHlCommander
 
+from drone import Drone
+
 URI = uri_helper.uri_from_env(default='radio://0/80/2M/E7E7E7E714')
 
 # Unit: meter
@@ -54,7 +56,7 @@ EPSYLON=0.001
 
 #to be added in parser
 verbose = True
-state_zigzag={'start':-1, 'left':0, 'forward1':1, 'right':2, 'forward2':3, 'back2left':4, 'arrived':5}
+#state_zigzag={'start':-1, 'left':0, 'forward1':1, 'right':2, 'forward2':3, 'back2left':4, 'arrived':5}
 
 
 deck_attached_event = Event()
@@ -63,7 +65,7 @@ deck_attached_event = Event()
 logging.basicConfig(level=logging.ERROR)
 
 # Logs global variables
-position_estimate = [0, 0, 0, 0, 0]
+#position_estimate = [0, 0, 0, 0, 0]
 logs = np.zeros([100000,5])
 count = 0
 
@@ -84,13 +86,16 @@ def param_deck_flow(_, value_str):
 
 # Logs functions -------------------------------------------------------------------------------------------
 def log_pos_callback(timestamp, data, logconf):
-    #print(data)
-    global position_estimate
-    position_estimate[0] = data['stateEstimate.x']
-    position_estimate[1] = data['stateEstimate.y']
-    position_estimate[2] = data['stateEstimate.z']
-    position_estimate[3] = data['range.zrange']
-    position_estimate[4] = data['stateEstimate.yaw']
+    global dronito
+    x = data['stateEstimate.x']
+    y = data['stateEstimate.y']
+    z = data['stateEstimate.z']
+    zrange = data['range.zrange']
+    yaw = data['stateEstimate.yaw']
+    #add a flag to update using est2 on the way back
+    dronito.update_est(x, y, z, zrange, yaw)
+    # if way_back_flag is True:
+    #     dronito.update_est2(x, y, z, zrange, yaw)
 
 
 def stab_log_data(timestamp, data, logconf):
@@ -120,87 +125,9 @@ def store_log_data():
 
 # -------------------------------------------------------------------------------------------------------------
 
-def zigzag_nonblocking():
-    global case, x_offset, yaw_landing, state_zigzag
-    #to test way_back
-    global start_time, goal_x, goal_y
-    global edge, position_estimate
-
-    #print(state_zigzag['start'])
-    if case==state_zigzag["start"]:
-        mc.start_forward()
-        print('start')
-    if (case==state_zigzag["start"] and position_estimate[0]>START_EXPLORE_X) or case == state_zigzag["back2left"]:
-        regulate_yaw(mc, 0, position_estimate[4])
-        case=state_zigzag["left"]
-        mc.start_left()
-        print('left')
-    elif (case==state_zigzag["left"] and position_estimate[1] > BOX_LIMIT_Y-START_POS_Y) :
-        regulate_yaw(mc, 0, position_estimate[4])
-        case=state_zigzag["forward1"]
-        print('forward 1')
-        mc.forward(x_offset)
-    elif case == state_zigzag["forward1"]:
-        regulate_yaw(mc, 0, position_estimate[4])
-        case=state_zigzag["right"]
-        print('right')
-        mc.start_right()
-    elif case == state_zigzag["right"] and  position_estimate[1] < -START_POS_Y:
-        regulate_yaw(mc, 0, position_estimate[4])
-        case = state_zigzag["forward2"]
-        print('forward 2')
-        mc.forward(x_offset)
-        case=state_zigzag["back2left"]
-        print('back2left')
-
-    #Temporaire: condition d'arret si la limite de l'arene en x 
-    if position_estimate[0] > BOX_LIMIT_X - START_POS_X:
-        print("Seulement un edge détecté, pas le deuxième, limite arene x reached, let's land for safety")
-        mc.land()
-        time.sleep(1)
-        case =state_zigzag["arrived"]
-    
-    #Temporaire condition de retour basé sur le temps de vol
-    if(time.time()-start_time>TIME_EXPLORE):
-        print(" Exploration time exceeded")
-        yaw_landing=position_estimate[4]
-        print("yaw during landing", yaw_landing)
-        #must record goal pos before landing because variation can occur
-        goal_x=position_estimate[0]
-        goal_y=position_estimate[1]
-        mc.land()
-        time.sleep(1)
-        mc.take_off(DEFAULT_HEIGHT)
-        #clean_takeoff(mc, [goal_x, goal_y, yaw_landing])
-        case =state_zigzag["arrived"] #to get out of zigzag
-
-    if ( edge == True and (case != state_zigzag["start"]) and (case != state_zigzag["arrived"]) ):
-        print('Edge far detected!')
-        #yaw_landing=position_estimate[2]
-        #must record goal pos before landing because variation can occur
-        #goal_x=position_estimate[0]
-        #goal_y=position_estimate[1]
-        
-        find_platform_center()
-        #mc.land()
-        #time.sleep(1)
-        #mc.take_off(DEFAULT_HEIGHT)
-        #clean_takeoff(mc, [goal_x, goal_y, yaw_landing])
-        #case =state_zigzag["arrived"] #to get out of zigzag
-
-def go_back(occupancy_grid,explored_list):
-    global goal_x, goal_y
-    path=find_path(start, goal, occupancy_grid, len_x+1, len_y+1, explored_list)
-    mc.land()
-
-def compute_offset():
-    offset=math.tan(FOV_ZRANGER)/DEFAULT_HEIGHT
-    #print(offset)
-    return offset
-
-
 def posestimation_to_grid(position_estimate_x,position_estimate_y):
-    return (int((position_estimate_x+START_POS_X)/RESOLUTION_GRID), int((position_estimate_y+START_POS_Y)/RESOLUTION_GRID))
+    return (int((position_estimate_x)/RESOLUTION_GRID), int((position_estimate_y)/RESOLUTION_GRID))
+    #return (int((position_estimate_x+START_POS_X)/RESOLUTION_GRID), int((position_estimate_y+START_POS_Y)/RESOLUTION_GRID))
 
 def obstacle_mapping(range_left, range_right, range_front, range_back, occupancy_grid, pos_x, pos_y):
 
@@ -234,70 +161,7 @@ def obstacle_mapping(range_left, range_right, range_front, range_back, occupancy
             
     return occupancy_grid
 
-def clean_takeoff(mc, init_coord=None): 
-    #au début pas de coordonnées initiales
-    if init_coord is None:
-        time.sleep(0.1)
-        #nécéssaire ???
-        #mc._reset_position_estimator()
-        init_x = START_POS_X+position_estimate[0]
-        init_y = START_POS_Y+position_estimate[1]
-        #init_yaw = 0    
-        print("Start pos (x, y):", init_x, init_y)
-        print("Start yaw:", position_estimate[4])
-        regulate_x(mc, START_POS_X, init_x)
-        time.sleep(1)
-        regulate_y(mc, START_POS_Y, init_y)
-        time.sleep(1)
-        regulate_yaw(mc, 0, position_estimate[4])
-        time.sleep(1)
-        return init_x, init_y
-    #apres le landing on veut controler la position après le redécollage
-    else:
-        print("in regulate re-takeoff")
-        time.sleep(1)
-        curr_x = position_estimate[0]
-        curr_y = position_estimate[1]
-        curr_yaw = position_estimate[4]
-        print("current pos (x, y, yaw):", curr_x, curr_y, curr_yaw)
-        print("before landing pos (x, y, yaw):", init_coord[0], init_coord[1], init_coord[2])
-        #regulate_x(mc, init_coord[0], curr_x)
-        #regulate_y(mc, init_coord[1], curr_y)
-        regulate_yaw(mc, init_coord[2], curr_yaw)
-        return init_x, init_y
-
-def regulate_x(mc, init_x, curr_x):
-    print("in regulate_x")
-    error_x=curr_x-init_x
-    if error_x>EPSYLON:
-        mc.back(error_x)
-    if error_x<-EPSYLON:
-        mc.forward(-error_x)
-    else:
-        print("zero_error")
-
-def regulate_y(mc, init_y, curr_y):
-    print("in regulate_y")
-    error_y=curr_y-init_y
-    if error_y>EPSYLON:
-        mc.right(error_y)
-    if error_y<-EPSYLON:
-        mc.left(-error_y)
-    else:
-        print("zero_error")
-
-
-
-# regulate yaw to init angle
-def regulate_yaw(mc, init_yaw, curr_yaw):
-    print("in regulate yaw")
-    if init_yaw - curr_yaw >= EPSYLON:
-        mc.turn_left(init_yaw - curr_yaw)
-    if init_yaw - curr_yaw < -EPSYLON:
-        mc.turn_right(curr_yaw - init_yaw)
-    else:
-        print("zero error")
-
+# -------------------------------------------------------------------------------------------------------------
 def is_close(range):
     MIN_DISTANCE = 0.5  # m
 
@@ -308,14 +172,15 @@ def is_close(range):
 
 def  obstacle_avoid_left_right():
     global velocity_x, velocity_y, pos_estimate_before, state, first_detection, no_detection, from_left, from_right
+    global dronito
 
     
-    if (is_close(multiranger.left) & (not from_right) & case==state_zigzag['left'] ):
+    if (is_close(multiranger.left) & (not from_right) & case==state_zigzag['left']):
         print('state =1 left') 
         from_left = 1
         if (state==1) :
-            pos_estimate_before = position_estimate[0] #x
-            pos_estimate_before_y = position_estimate[1]
+            pos_estimate_before = dronito.est_x 
+            pos_estimate_before_y = dronito.est_y
         velocity_y = 0.0
         if (abs(pos_estimate_before_y - (-START_POS_Y) < THRESH_Y) or abs(pos_estimate_before_y - (BOX_LIMIT_Y -START_POS_Y) < THRESH_Y)):
             return False
@@ -330,8 +195,8 @@ def  obstacle_avoid_left_right():
         print('state =1 right') 
         from_right = 1
         if (state==1) :
-            pos_estimate_before = position_estimate[0]
-            pos_estimate_before_y = position_estimate[1]
+            pos_estimate_before = dronito.est_x
+            pos_estimate_before_y = dronito.est_y
         if (abs(pos_estimate_before_y - (-START_POS_Y) < THRESH_Y) or abs(pos_estimate_before_y - (BOX_LIMIT_Y -START_POS_Y) < THRESH_Y)):
             return False
         if abs(pos_estimate_before - (-START_POS_X)) > abs(pos_estimate_before - (BOX_LIMIT_X - START_POS_X)):
@@ -369,7 +234,7 @@ def  obstacle_avoid_left_right():
             velocity_x = VELOCITY
         else :
             velocity_x = - VELOCITY
-        if (position_estimate[0] < abs(pos_estimate_before + 0.03)):
+        if (dronito.est_x < abs(pos_estimate_before + 0.03)):
             print('fin state 3')
             if (is_close(multiranger.right)):
                 ('right close going left')
@@ -394,12 +259,13 @@ def  obstacle_avoid_left_right():
 
 def  obstacle_avoid_front_back():
     global velocity_x, velocity_y, pos_estimate_before, state, first_detection, no_detection, from_front, from_back
+    global dronito
 
     if (is_close(multiranger.front) & (not from_back) & (case==state_zigzag['forward1'] or case==state_zigzag['start'] or case==state_zigzag['forward2'] )): 
         print('state =1 front')
         from_front = 1
         if (state==1) :
-            pos_estimate_before = position_estimate[0]
+            pos_estimate_before = dronito.est_x
         if abs(pos_estimate_before - (-START_POS_Y)) > abs(pos_estimate_before - BOX_LIMIT_Y):
             velocity_y = - VELOCITY
         else :
@@ -412,7 +278,7 @@ def  obstacle_avoid_front_back():
         print('state =1 back')
         from_back = 1
         if (state==1) :
-            pos_estimate_before = position_estimate[1]
+            pos_estimate_before = dronito.est_y
         velocity_y = - VELOCITY
         velocity_x = 0
         state = 2
@@ -445,9 +311,9 @@ def  obstacle_avoid_front_back():
         else :
             velocity_y = - VELOCITY
         velocity_x = 0
-        print(position_estimate[1])
+        print(dronito.est_y)
         print(pos_estimate_before)
-        if (position_estimate[1] < abs(pos_estimate_before + 0.03)):
+        if (dronito.est_y < abs(pos_estimate_before + 0.03)):
             print('fin state 3')
             if (is_close(multiranger.back)):
                 velocity_y = 0
@@ -514,16 +380,14 @@ def is_edge_2():
         return False, 0, 0
 
 def find_platform_center():
-    global edge, case, logs, state_zigzag, position_estimate, x_edge, y_edge 
+    global edge, case, logs, state_zigzag, x_edge, y_edge 
 
-    #x1=position_estimate[0]
-    #y1=position_estimate[1]
     x1=x_edge
     y1=y_edge
     
     """
     x1_bis=position_estimate[0]
-    y1_bis=position_estimate[1]
+    y1_bis=dronito.est_y
 
     print(x1,' ',x1_bis)
     print(y1,' ',y1_bis)
@@ -556,19 +420,19 @@ def find_platform_center():
 
     if case == state_zigzag["right"]:
         mc.start_left()
-        while(position_estimate[1]<(y1-0.18)):
-            print('going left ',position_estimate[1],' ',y1)
+        while(dronito.est_y<(y1-0.18)):
+            print('going left ',dronito.est_y,' ',y1)
             continue
-        x2_before=position_estimate[0]
-        y2_before=position_estimate[1]
+        x2_before=dronito.est_x
+        y2_before=dronito.est_y
 
     if case == state_zigzag["left"]:
         mc.start_right()
-        while(position_estimate[1]>y1+0.18):
-            print('going right ',position_estimate[1],' ',y1)
+        while(dronito.est_y>y1+0.18):
+            print('going right ',dronito.est_y,' ',y1)
             continue
-        x2_before=position_estimate[0]
-        y2_before=position_estimate[1]
+        x2_before=dronito.est_x
+        y2_before=dronito.est_y
 
     mc.start_forward()
     print('going forward')
@@ -601,7 +465,7 @@ def find_platform_center():
             plt.savefig('first edge & second edge')
             """
             
-        if position_estimate[0] > BOX_LIMIT_X - START_POS_X:
+        if dronito.est_x > BOX_LIMIT_X - START_POS_X:
             print("No center found, limite arene x reached, let's land for safety")
             mc.land()
             case =state_zigzag["arrived"]
@@ -618,8 +482,8 @@ def find_platform_center():
     #mc.move_distance(dX,dY,0)
 
     mc.forward(0.02)
-    goal_x=position_estimate[0]
-    goal_y=position_estimate[1]
+    goal_x=dronito.est_x
+    goal_y=dronito.est_y
 
     time.sleep(2)
     #default velocity 
@@ -677,27 +541,18 @@ if __name__ == '__main__':
 
         with MotionCommander(scf, default_height=DEFAULT_HEIGHT) as mc:
             with Multiranger(scf) as multiranger:
+                dronito=Drone(mc, start_x=START_POS_X, start_y=START_POS_Y, time_explore=TIME_EXPLORE, x_offset=0.25)
                 #little sleep needed for takeoff
                 time.sleep(0.1)
-                #function to reset the estimations
-                #clean_takeoff(mc)
-                #variables used for the wayback test based on time
-                start_time=time.time()
-                print(start_time)
-                goal_x=0
-                goal_y=0
+                
                 
                 #variables needed for global nav
                 len_x, len_y = (BOX_LIMIT_X, BOX_LIMIT_Y)
                 occupancy_grid = np.zeros((len_x,len_y))
                 explored_list = []
                 
-                #variables needed for zigzag
-                case=state_zigzag["start"]
-                x_offset=0.25 #compute_offset() test with 30cm
                 
                 pos_estimate_before = 0
-                yaw_landing=0
                 velocity_y = 0
                 velocity_x = 0
                 state = 1
@@ -711,46 +566,37 @@ if __name__ == '__main__':
                 #temporary intentional disturbance to regulate yaw
                 # time.sleep(1)
                 # mc.turn_left(7)
-                clean_takeoff(mc)
+                dronito.clean_takeoff(mc)
 
 
                 while(1):
                     #print(obstacle_avoidance())
                     if (obstacle_avoidance() == False):
-                    #if True:
-                        print('obs false')
                         #if no obstacle is being detected let zigzag manage the speeds
-                        if case != state_zigzag['arrived']:
-                            #explored list filling
-                            if not((pos_to_grid(position_estimate[0],position_estimate[1])) in explored_list):
-                                explored_list.append(pos_to_grid(position_estimate[0],position_estimate[1]))
+                        if not dronito.is_arrived():
 
-                            #occupancy_grid filling
-                            occupancy_grid = obstacle_mapping(multiranger.left, multiranger.right, multiranger.front, multiranger.back, occupancy_grid, position_estimate[0], position_estimate[1])
-
-                            if case != state_zigzag['start']:
+                            # #explored list filling
+                            # if not((pos_to_grid(position_estimate[0],position_estimate[1])) in explored_list):
+                            #     explored_list.append(pos_to_grid(position_estimate[0],position_estimate[1]))
+                            # #occupancy_grid filling
+                            # occupancy_grid = obstacle_mapping(multiranger.left, multiranger.right, multiranger.front, multiranger.back, occupancy_grid, position_estimate[0], position_estimate[1])
+                            #print(explored_list)
+                            
+                            if not dronito.is_starting():
                                 [edge,x_edge,y_edge] = is_edge_2()
-                            zigzag_nonblocking()
-                            #print("yaw :", position_estimate[4])
-                            #regulate_yaw(mc,0, position_estimate[4])
+                            dronito.zigzag()
                         else:
-                            #regulate_yaw(mc, yaw_landing, position_estimate[3]) #compensate the error in yaw during landing
-                            #print("yaw after regulate:", position_estimate[3])
-                            go_back()
-                            logconf.stop()
-                            store_log_data()
-                            break
-                        print(explored_list)
+                            dronito.go_back()
+                        
                         time.sleep(1)
                     else:
                         print("obstacle av = True")
-                        #print(velocity_x, velocity_y)
                         #obstacle detected then gives manually the speeds defined by obstacle avoidance
                         mc.start_linear_motion(velocity_x, velocity_y, 0)
                         time.sleep(0.1)
         #stop logging
-        #logconf.stop()
-        #store_log_data()
+        logconf.stop()
+        store_log_data()
 
         
 
