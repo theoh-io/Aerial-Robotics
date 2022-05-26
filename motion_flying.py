@@ -27,13 +27,14 @@ URI = uri_helper.uri_from_env(default='radio://0/80/2M/E7E7E7E714')
 
 # Unit: meter
 DEFAULT_HEIGHT = 0.5 #1
+DEFAULT_VELOCITY = 0.2
 
 FOV_ZRANGER=math.radians(2.1)
-BOX_LIMIT_X = 2 #5
+BOX_LIMIT_X = 1.2 #5
 BOX_LIMIT_Y = 1 #3
 START_POS_X = 0
-START_POS_Y = 0.7
-GOAL_ZONE_X= 1
+START_POS_Y = 0
+GOAL_ZONE_X= 0.5
 START_EXPLORE_X = GOAL_ZONE_X-START_POS_X
 THRESH_Y = 0.5
 #variables needed for obstacle avoidance
@@ -604,14 +605,19 @@ def find_platform_center():
 
     if case == state_zigzag["right"]:
         mc.start_left()
+        print(y1)
+        print(position_estimate[1])
         while(position_estimate[1]<(y1-0.25)):
             #pass
             print('going left ',position_estimate[1],' ',y1)
+        
         x2_before=position_estimate[0]
         y2_before=position_estimate[1]
 
     if case == state_zigzag["left"]:
         mc.start_right()
+        print(y1)
+        print(position_estimate[1])
         while(position_estimate[1]>y1+0.25):
             #pass
             print('going right ',position_estimate[1],' ',y1)
@@ -632,6 +638,7 @@ def find_platform_center():
             """
             x2=x_edge
             y2=y_edge
+            mc.stop()
 
             """
             print('x1: ',x1,'x1_bis: ',x1_bis)
@@ -657,22 +664,23 @@ def find_platform_center():
 
     dX=0.15
     dY=0
-
-    #if case == state_zigzag["right"]:
-    #    dY=y1-y2-0.15
-    #if case == state_zigzag["left"]:
-    #    dY=-(y1-y2)-0.15
     
-    #mc.move_distance(dX,dY,0)
+    mc.forward(0.05)
+    #with PositionHlCommander(scf, default_velocity=DEFAULT_VELOCITY, default_height=DEFAULT_HEIGHT, controller=PositionHlCommander.CONTROLLER_MELLINGER) as pc:
+     #   if case == state_zigzag["right"]:
+      #      pc.go_to(x2+0.15,y1-0.15,z=DEFAULT_HEIGHT)
+#
+ #       if case == state_zigzag["left"]:
+  #          pc.go_to(x2+0.15,y1-0.15,z=DEFAULT_HEIGHT)
+    
 
-    mc.forward(0.15)
     goal_x=position_estimate[0]
     goal_y=position_estimate[1]
 
     time.sleep(1)
     #mc.down(0.35)
     #mc.stop()
-    mc.land(velocity=0.05)
+    mc.land(velocity=0.1)
     case = state_zigzag["arrived"]
 
     x0=x2+dX
@@ -771,8 +779,8 @@ if __name__ == '__main__':
 
                 while(1):
                     #print(obstacle_avoidance())
-                    if (not(obstacle_avoidance())):
-                    #if True:
+                    #if (not(obstacle_avoidance())):
+                    if True:
                         #print('obs false')
                         #if no obstacle is being detected let zigzag manage the speeds
                         if case != state_zigzag['arrived']:
