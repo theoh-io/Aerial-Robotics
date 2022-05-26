@@ -30,13 +30,13 @@ DEFAULT_HEIGHT = 0.5 #1
 DEFAULT_VELOCITY = 0.2
 
 FOV_ZRANGER=math.radians(2.1)
-BOX_LIMIT_X = 1.2 #5
-BOX_LIMIT_Y = 1 #3
+BOX_LIMIT_X = 3 #5
+BOX_LIMIT_Y = 1.2 #3
 START_POS_X = 0
 START_POS_Y = 0
-GOAL_ZONE_X= 0.5
+GOAL_ZONE_X= 1
 START_EXPLORE_X = GOAL_ZONE_X-START_POS_X
-THRESH_Y = 0.5
+THRESH_Y = 0.7
 #variables needed for obstacle avoidance
 VELOCITY = 0.2
 
@@ -305,7 +305,7 @@ def regulate_yaw(mc, init_yaw, curr_yaw):
         print("zero error")
 
 def is_close(range):
-    MIN_DISTANCE = 0.5  # m
+    MIN_DISTANCE = 0.2  # m
 
     if range is None:
         return False
@@ -313,21 +313,26 @@ def is_close(range):
         return range < MIN_DISTANCE
 
 def  obstacle_avoid_left_right():
-    global velocity_front, velocity_left, pos_estimate_before_x, state, first_detection, no_detection, from_left, from_right, pos_estimate_before_y, obstacle_at_front,obstacle_at_back
+    global velocity_front, velocity_left, pos_estimate_before_x, state, first_detection, no_detection, from_left, from_right, pos_estimate_before_y, obstacle_at_front, obstacle_at_back
     global case
     
-    if (is_close(multiranger.left) & (not (from_right or from_front or from_back)) & case==state_zigzag['left'] ):
+    if (is_close(multiranger.left) and (not (from_right)) and case==state_zigzag['left'] ):
         print('state =1 left') 
-
+        print(multiranger.left)
+        print(is_close(multiranger.left))
         from_left = 1
 
         if (state==1) :
             pos_estimate_before_x = position_estimate[0] #x front/back
             pos_estimate_before_y = position_estimate[1] #y left/right
-        if (abs(pos_estimate_before_y - (-START_POS_Y) < THRESH_Y) or abs(pos_estimate_before_y - (BOX_LIMIT_Y -START_POS_Y) < THRESH_Y)): #obstacle very close to y border
+        """
+        if (abs(pos_estimate_before_y - (BOX_LIMIT_Y) < THRESH_Y)): #obstacle very close to y border prendre en cond min dist
+            print("too close to border")
             case=state_zigzag["forward1"]
+            from_left = 0
             return False
-        if abs(pos_estimate_before_x - (-START_POS_X)) > abs(pos_estimate_before_x - (BOX_LIMIT_X - START_POS_X)): #back better than front?
+        """
+        if abs(pos_estimate_before_x) > abs(pos_estimate_before_x - (BOX_LIMIT_X )): #back better than front?
             velocity_front = - VELOCITY
         else :
             velocity_front = VELOCITY
@@ -335,23 +340,29 @@ def  obstacle_avoid_left_right():
         state = 2
         return True
 
-    if (is_close(multiranger.right)  & (not (from_left or from_front or from_back)) & case==state_zigzag['right']):
+    if (is_close(multiranger.right)  and (not (from_left)) and case==state_zigzag['right']):
         print('state =1 right') 
-        
+        print(multiranger.left)
+        print(is_close(multiranger.left))
         from_right = 1
         
         if (state==1) :
             pos_estimate_before_x = position_estimate[0]
             pos_estimate_before_y = position_estimate[1]
-        if (abs(pos_estimate_before_y - (-START_POS_Y) < THRESH_Y) or abs(pos_estimate_before_y - (BOX_LIMIT_Y -START_POS_Y) < THRESH_Y)): #obstacle very close to y border
+        
+        if (abs(pos_estimate_before_y < THRESH_Y)): #obstacle very close to y border
+            print("too close to border")
             case=state_zigzag["forward2"]
-            return False
-        if abs(pos_estimate_before_x - (-START_POS_X)) > abs(pos_estimate_before_x - (BOX_LIMIT_X - START_POS_X)): #back better than front?
+            from_right = 0
+            return False  
+        
+        if abs(pos_estimate_before_x) > abs(pos_estimate_before_x - (BOX_LIMIT_X)): #back better than front?
             obstacle_at_front = 1
             velocity_front = - VELOCITY
         else :
             obstacle_at_back = 1
             velocity_front = VELOCITY
+        
         velocity_left = 0.0
         state = 2
         return True
@@ -361,17 +372,17 @@ def  obstacle_avoid_left_right():
         velocity_front = 0.0
         if (from_right):
             velocity_left = -VELOCITY
-            dist = -0.1
+            #dist = -0.1
         if (from_left):
             velocity_left = +VELOCITY 
-            dist = +0.1
+            #dist = +0.1
         if(obstacle_at_back):
             if (first_detection):
                 if (not(is_close(multiranger.back))): 
                     no_detection = no_detection + 1
                     if (no_detection >= 2): # for safety
                         state = 3
-                        mc.move_distance(0, dist, 0, VELOCITY)
+                        #mc.move_distance(0, dist, 0, VELOCITY)
             if (is_close(multiranger.back)):
                 first_detection =1
                 velocity_front = 0.05
@@ -381,7 +392,7 @@ def  obstacle_avoid_left_right():
                     no_detection = no_detection + 1
                     if (no_detection >= 2): # for safety
                         state = 3
-                        mc.move_distance(0, dist, 0, VELOCITY)
+                        #mc.move_distance(0, dist, 0, VELOCITY)
             if (is_close(multiranger.front)):
                 first_detection =1
                 velocity_front = - 0.05
@@ -416,6 +427,8 @@ def  obstacle_avoid_left_right():
             from_right =0
             pos_estimate_before_x = 0
             pos_estimate_before_y = 0
+            obstacle_at_back = 0
+            obstacle_at_front = 0
             return False
         return True  #check this indent
     return False
@@ -423,12 +436,12 @@ def  obstacle_avoid_left_right():
 def  obstacle_avoid_front_back():
     global velocity_front, velocity_left, pos_estimate_before_y, state, first_detection, no_detection, from_front, from_back, obstacle_at_left, obstacle_at_right
 
-    if (is_close(multiranger.front) & (not from_back) & (case==state_zigzag['forward1'] or case==state_zigzag['start'] or case==state_zigzag['forward2'] )): 
+    if (is_close(multiranger.front) and (not from_back) and (case==state_zigzag['forward1'] or case==state_zigzag['start'] or case==state_zigzag['forward2'] )): 
         print('state =1 front')
         from_front = 1
         if (state==1) :
             pos_estimate_before_y = position_estimate[1] #y pos left/right
-            if abs(pos_estimate_before_y - (-START_POS_Y)) > abs(pos_estimate_before_y - (BOX_LIMIT_Y- START_POS_Y)): # if distance plus grande a droite ? 
+            if abs(pos_estimate_before_y) > abs(pos_estimate_before_y - (BOX_LIMIT_Y)): # if distance plus grande a droite ? 
                 obstacle_at_left =1
                 velocity_left = - VELOCITY
             else :
@@ -438,12 +451,12 @@ def  obstacle_avoid_front_back():
         state = 2
         return True
 
-    if (is_close(multiranger.back) & (not from_front) & case==state_zigzag['arrived']): #jamais pour le moment
+    if (is_close(multiranger.back) and (not from_front) and (case==state_zigzag['arrived'])): #jamais pour le moment
         print('state =1 back')
         from_back = 1
         if (state==1) :
             pos_estimate_before_y = position_estimate[1] #y pos left/right
-            if abs(pos_estimate_before_y - (-START_POS_Y)) > abs(pos_estimate_before_y - (BOX_LIMIT_Y - START_POS_Y)): # if distance plus grande a droite ? 
+            if abs(pos_estimate_before_y) > abs(pos_estimate_before_y - (BOX_LIMIT_Y)): # if distance plus grande a droite ? 
                 obstacle_at_left =1
                 velocity_left = - VELOCITY
             else :
@@ -511,7 +524,6 @@ def  obstacle_avoid_front_back():
             obstacle_at_left =0
             obstacle_at_right =0
             pos_estimate_before_y =0
-            pos_estimate_before_x =0
             return False
         return True  #check this indent
     return False
@@ -519,9 +531,9 @@ def  obstacle_avoid_front_back():
 def obstacle_avoidance():
     #print(case)
 #il faut penser au cas ou la vitesse n'est pas dans la direction de l'obstacle
-    if ((is_close(multiranger.left) or is_close(multiranger.right) or from_left or from_right) & (from_front ==0) & (from_back == 0)):
+    if ((is_close(multiranger.left) or is_close(multiranger.right) or from_left or from_right) and (from_front ==0) and (from_back == 0)):
         return obstacle_avoid_left_right()
-    elif ((is_close(multiranger.front) or is_close(multiranger.back) or from_front or from_back) & (from_right ==0) & (from_left == 0)): 
+    elif ((is_close(multiranger.front) or is_close(multiranger.back) or from_front or from_back) and (from_right ==0) and (from_left == 0)): 
         #print(case)
         return obstacle_avoid_front_back()
     return False
@@ -638,7 +650,7 @@ def find_platform_center():
             """
             x2=x_edge
             y2=y_edge
-            mc.stop()
+
 
             """
             print('x1: ',x1,'x1_bis: ',x1_bis)
@@ -665,7 +677,8 @@ def find_platform_center():
     dX=0.15
     dY=0
     
-    mc.forward(0.05)
+    #before working mc.forward(0.05)
+    mc.forward(0.1, velocity=0.1)
     #with PositionHlCommander(scf, default_velocity=DEFAULT_VELOCITY, default_height=DEFAULT_HEIGHT, controller=PositionHlCommander.CONTROLLER_MELLINGER) as pc:
      #   if case == state_zigzag["right"]:
       #      pc.go_to(x2+0.15,y1-0.15,z=DEFAULT_HEIGHT)
@@ -736,7 +749,7 @@ if __name__ == '__main__':
                 #little sleep needed for takeoff
                 time.sleep(1)
                 #function to reset the estimations
-                clean_takeoff(mc)
+                #lean_takeoff(mc)
                 #variables used for the wayback test based on time
                 start_time=time.time()
                 print(start_time)
@@ -765,6 +778,9 @@ if __name__ == '__main__':
                 from_right =0
                 obstacle_at_left = 0
                 obstacle_at_right = 0
+                obstacle_at_front =0
+                obstacle_at_back =0
+
                 
                 #temporary intentional disturbance to regulate yaw
                 # time.sleep(1)
@@ -779,8 +795,8 @@ if __name__ == '__main__':
 
                 while(1):
                     #print(obstacle_avoidance())
-                    #if (not(obstacle_avoidance())):
-                    if True:
+                    if (not(obstacle_avoidance())):
+                    #if True:
                         #print('obs false')
                         #if no obstacle is being detected let zigzag manage the speeds
                         if case != state_zigzag['arrived']:
