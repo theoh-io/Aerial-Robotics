@@ -43,7 +43,7 @@ THRESH_Y = 0.5
 VELOCITY = 0.2
 
 
-TIME_EXPLORE= 15
+TIME_EXPLORE= 3
 
 RESOLUTION_GRID=0.20 # m
 MIN_DISTANCE_OCCUP_GRIG = 3  # m
@@ -87,31 +87,37 @@ def param_deck_flow(_, value_str):
 # Logs functions -------------------------------------------------------------------------------------------
 def log_pos_callback(timestamp, data, logconf):
     global dronito
-    x = data['stateEstimate.x']
-    y = data['stateEstimate.y']
-    z = data['stateEstimate.z']
-    zrange = data['range.zrange']
-    yaw = data['stateEstimate.yaw']
-    #add a flag to update using est2 on the way back
-    dronito.update_est(x, y, z, zrange, yaw)
-    # if way_back_flag is True:
-    #     dronito.update_est2(x, y, z, zrange, yaw)
+    try:
+        x = data['stateEstimate.x']
+        y = data['stateEstimate.y']
+        z = data['stateEstimate.z']
+        zrange = data['range.zrange']
+        yaw = data['stateEstimate.yaw']
+        #add a flag to update using est2 on the way back
+        
+        dronito.update_est(x, y, z, zrange, yaw)
+        if dronito.landed ==1:
+            #print("successfully found flag")
+            dronito.update_est2(x, y, z, zrange, yaw)
+    except:
+        pass
 
 
 def stab_log_data(timestamp, data, logconf):
     """Callback from the log API when data arrives"""
     #print('[%d][%s]: %s' % (timestamp, logconf.name, data))
     global count
-    
+    global dronito
+    data_drone=[dronito.est_x, dronito.est_y, dronito.est_z, dronito.z_range, dronito.est_yaw]
     # Save info into log variable
-    for idx, i in enumerate(list(data)):
+    for idx in range(len(data_drone)):
         if idx < 3:
-            logs[count][idx] = data[i]*1000
-        if idx == 4:
+            logs[count][idx] = data_drone[idx]*1000
+        elif idx == 4:
             #multiply yaw by 100
-            logs[count][idx] = data[i]*100
+            logs[count][idx] = data_drone[idx]*100
         else:
-            logs[count][idx] = data[i]
+            logs[count][idx] = data_drone[idx]
     count += 1
 
 def store_log_data():
@@ -517,10 +523,14 @@ if __name__ == '__main__':
     cflib.crtp.init_drivers()
     with SyncCrazyflie(URI, cf=Crazyflie(rw_cache='./cache')) as scf:
 
+        # scf.cf.param.set_value('kalman.resetEstimation', '1')
+        # time.sleep(0.1)
+        # scf.cf.param.set_value('kalman.resetEstimation', '0')
+        # time.sleep(2)
+
         #want to know if the flow deck is correctly attached before flying,
         scf.cf.param.add_update_callback(group="deck", name="bcFlow2",
                                          cb=param_deck_flow)
-        time.sleep(1)
         #or
         if not deck_attached_event.wait(timeout=5):
             print('No flow deck detected!')
@@ -564,10 +574,10 @@ if __name__ == '__main__':
                 from_right =0
                 
                 #temporary intentional disturbance to regulate yaw
-                # time.sleep(1)
-                # mc.turn_left(7)
-                #dronito.clean_takeoff(mc)
-
+                time.sleep(1)
+                mc.turn_left(7)
+                dronito.clean_takeoff()
+                logs = np.zeros([100000,5])
                 #parameter to run the main while
                 freq_main=0.1
 
@@ -590,6 +600,7 @@ if __name__ == '__main__':
                             dronito.zigzag()
                         else:
                             dronito.go_back()
+                            break
                         
                         time.sleep(freq_main)
                     else:
@@ -598,6 +609,7 @@ if __name__ == '__main__':
                         mc.start_linear_motion(velocity_x, velocity_y, 0)
                         time.sleep(0.1)
         #stop logging
+        print("in logcong")
         logconf.stop()
         store_log_data()
 

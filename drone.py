@@ -10,7 +10,7 @@ BOX_LIMIT_Y = 0.7 #3
 #START_POS_X = 0
 #START_POS_Y = 0
 GOAL_ZONE_X= 0.8
-TIME_EXPLORE= 15
+TIME_EXPLORE= 7
 #variables needed for obstacle avoidance
 VELOCITY = 0.2
 EPSYLON=0.0001
@@ -50,6 +50,9 @@ class Drone():
         self.case=self.state_zigzag["start"]
         self.start_time=time.time()
         self.x_offset=x_offset
+        #attributes freq reg yaw
+        self.time_yaw=0 #to ompare with timestep
+        self.timestep=1
 
         #attributes takeoff 2
         self.yaw_landing=0
@@ -99,6 +102,8 @@ class Drone():
 
     def zigzag(self):
         #print(state_zigzag['start'])
+        #self.freq_yaw_reg() #function called at every given timestep to regulate the yaw
+
         if self.case==self.state_zigzag["start"]:
             self.mc.start_forward()
             print('start')
@@ -134,17 +139,18 @@ class Drone():
         
         #Temporaire condition de retour basé sur le temps de vol
         if(time.time()-self.start_time>TIME_EXPLORE):
-            print(" Exploration time exceeded")
-            self.yaw_landing=self.est_yaw
-            print("yaw during landing", self.yaw_landing)
-            #must record goal pos before landing because variation can occur
-            self.goal_x=self.est_x
-            self.goal_y=self.est_y
-            self.mc.land()
-            time.sleep(1)
-            self.mc.take_off(DEFAULT_HEIGHT)
-            #clean_takeoff(self.mc, [goal_x, goal_y, yaw_landing])
-            self.case =self.state_zigzag["arrived"] #to get out of zigzag
+            self.goal_reached()
+            # print(" Exploration time exceeded")
+            # self.yaw_landing=self.est_yaw
+            # print("yaw during landing", self.yaw_landing)
+            # #must record goal pos before landing because variation can occur
+            # self.goal_x=self.est_x
+            # self.goal_y=self.est_y
+            # self.mc.land()
+            # time.sleep(1)
+            # self.mc.take_off(DEFAULT_HEIGHT)
+            # self.clean_takeoff2()
+            # self.case =self.state_zigzag["arrived"] #to get out of zigzag
 
         #FIXME need to be implemented outside of drone class
         if (self.edge == True and (self.case != self.state_zigzag["start"]) and (self.case != self.state_zigzag["arrived"]) ):
@@ -153,9 +159,9 @@ class Drone():
             #must record goal pos before landing because variation can occur
             #goal_x=self.est_x
             #goal_y=self.est_y
-            
-            find_platform_center()
-            #self.mc.land()
+            self.edge=1
+            #find_platform_center()
+            self.mc.land()
             #time.sleep(1)
             #self.mc.take_off(DEFAULT_HEIGHT)
             #clean_takeoff(self.mc, [goal_x, goal_y, yaw_landing])
@@ -210,44 +216,43 @@ class Drone():
         else:
             print("zero error")
     
-    def freq_yaw_reg(self, timestep):
-        if(time.time()-time_yaw>timestep):
+    def freq_yaw_reg(self):
+        if(time.time()-self.time_yaw>self.timestep):
             print("yaw before regulate:", self.est_yaw)
-            self.regulate_yaw(self.mc,0, self.yaw)
+            self.regulate_yaw(0, self.est_yaw)
             print("yaw after regulate:", self.est_yaw)
-            time_yaw=time.time()
+            self.time_yaw=time.time()
     
 
-    def clean_takeoff(self, init_coord=None): 
+    def clean_takeoff(self): 
         #au début pas de coordonnées initiales
-        if init_coord is None:
-            time.sleep(0.1)
-            #nécéssaire ???
-            #self.mc._reset_position_estimator()
-            curr_x = self.start_x+self.est_x
-            curr_y = self.start_y+self.est_y
-            #init_yaw = 0    
-            print("Start pos (x, y):", curr_x, curr_y)
-            print("Start yaw:", self.est_yaw)
-            self.regulate_x(self.start_x, curr_x)
-            time.sleep(1)
-            self.regulate_y(self.start_y, curr_y)
-            time.sleep(1)
-            self.regulate_yaw(0, self.est_yaw)
-            time.sleep(1)
+        time.sleep(0.1)
+        #nécéssaire ???
+        #self.mc._reset_position_estimator()
+        curr_x = self.start_x+self.est_x
+        curr_y = self.start_y+self.est_y
+        #init_yaw = 0    
+        # print("Start pos (x, y):", curr_x, curr_y)
+        # print("Start yaw:", self.est_yaw)
+        # self.regulate_x(self.start_x, curr_x)
+        # time.sleep(1)
+        # self.regulate_y(self.start_y, curr_y)
+        # time.sleep(1)
+        self.regulate_yaw(0, self.est_yaw)
+        time.sleep(1)
         #apres le landing on veut controler la position après le redécollage
-        else:
-            print("in regulate re-takeoff")
-            time.sleep(1)
-            curr_x = self.est_x
-            curr_y = self.est_y
-            curr_yaw = self.est_yaw
-            self.landed=1 #flag to change the estimation function
-            print("current pos (x, y, yaw):", curr_x, curr_y, curr_yaw)
-            print("before landing pos (x, y, yaw):", init_coord[0], init_coord[1], init_coord[2])
-            #regulate_x(self.mc, init_coord[0], curr_x)
-            #regulate_y(mc, init_coord[1], curr_y)
-            self.regulate_yaw(init_coord[2], curr_yaw)
+
+    def clean_takeoff2(self):
+        print("in clean takeoff2")
+        time.sleep(1)
+        # curr_x = self.est_x
+        # curr_y = self.est_y
+        #self.landed=1 #flag to change the estimation function
+        print("current pos (x, y, yaw):", self.est_x, self.est_y, self.est_yaw)
+        print("before landing pos (x, y, yaw):", self.goal_x, self.goal_y, self.yaw_landing)
+        #regulate_x(self.mc, init_coord[0], curr_x)
+        #regulate_y(mc, init_coord[1], curr_y)
+        self.regulate_yaw(self.yaw_landing, self.est_yaw)
 
 
     def goal_reached(self):
@@ -263,10 +268,13 @@ class Drone():
         self.goal_x=self.est_x
         self.goal_y=self.est_y
         self.mc.land()
+        self.landed=1 #used to decide which position estimation function to use
         time.sleep(1)
         self.mc.take_off(DEFAULT_HEIGHT)
+        self.clean_takeoff2()
         #clean_takeoff(self.mc, [goal_x, goal_y, yaw_landing])
         self.case =self.state_zigzag["arrived"] #to get out of zigzag
-        self.landed=1 #used to decide which position estimation function to use
+        
 
         
+            
