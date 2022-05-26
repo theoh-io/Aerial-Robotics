@@ -209,6 +209,14 @@ class Drone():
             self.mc.turn_right(curr_yaw - init_yaw)
         else:
             print("zero error")
+    
+    def freq_yaw_reg(self, timestep):
+        if(time.time()-time_yaw>timestep):
+            print("yaw before regulate:", self.est_yaw)
+            self.regulate_yaw(self.mc,0, self.yaw)
+            print("yaw after regulate:", self.est_yaw)
+            time_yaw=time.time()
+    
 
     def clean_takeoff(self, init_coord=None): 
         #au début pas de coordonnées initiales
@@ -234,6 +242,7 @@ class Drone():
             curr_x = self.est_x
             curr_y = self.est_y
             curr_yaw = self.est_yaw
+            self.landed=1 #flag to change the estimation function
             print("current pos (x, y, yaw):", curr_x, curr_y, curr_yaw)
             print("before landing pos (x, y, yaw):", init_coord[0], init_coord[1], init_coord[2])
             #regulate_x(self.mc, init_coord[0], curr_x)

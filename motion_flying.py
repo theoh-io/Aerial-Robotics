@@ -6,7 +6,7 @@ from threading import Event
 from threading import Timer
 import math
 import numpy as np
-from astar import find_path
+#from astar import find_path
 import datetime as dt
 from zipfile import ZIP_BZIP2
 import os
@@ -543,15 +543,15 @@ if __name__ == '__main__':
             with Multiranger(scf) as multiranger:
                 dronito=Drone(mc, start_x=START_POS_X, start_y=START_POS_Y, time_explore=TIME_EXPLORE, x_offset=0.25)
                 #little sleep needed for takeoff
-                time.sleep(0.1)
+                time.sleep(1)
                 
                 
                 #variables needed for global nav
                 len_x, len_y = (BOX_LIMIT_X, BOX_LIMIT_Y)
-                occupancy_grid = np.zeros((len_x,len_y))
-                explored_list = []
+                # occupancy_grid = np.zeros((len_x,len_y))
+                # explored_list = []
                 
-                
+                #variables needed for obstacle avoidance
                 pos_estimate_before = 0
                 velocity_y = 0
                 velocity_x = 0
@@ -566,12 +566,15 @@ if __name__ == '__main__':
                 #temporary intentional disturbance to regulate yaw
                 # time.sleep(1)
                 # mc.turn_left(7)
-                dronito.clean_takeoff(mc)
+                #dronito.clean_takeoff(mc)
+
+                #parameter to run the main while
+                freq_main=0.1
 
 
                 while(1):
                     #print(obstacle_avoidance())
-                    if (obstacle_avoidance() == False):
+                    if True:#(obstacle_avoidance() == False):
                         #if no obstacle is being detected let zigzag manage the speeds
                         if not dronito.is_arrived():
 
@@ -582,13 +585,13 @@ if __name__ == '__main__':
                             # occupancy_grid = obstacle_mapping(multiranger.left, multiranger.right, multiranger.front, multiranger.back, occupancy_grid, position_estimate[0], position_estimate[1])
                             #print(explored_list)
                             
-                            if not dronito.is_starting():
-                                [edge,x_edge,y_edge] = is_edge_2()
+                            #if not dronito.is_starting():
+                                #[edge,x_edge,y_edge] = is_edge_2()
                             dronito.zigzag()
                         else:
                             dronito.go_back()
                         
-                        time.sleep(1)
+                        time.sleep(freq_main)
                     else:
                         print("obstacle av = True")
                         #obstacle detected then gives manually the speeds defined by obstacle avoidance
