@@ -60,6 +60,8 @@ class Drone():
 
         #attributes edge detection
         self.edge=0
+        self.x_edge=0
+        self.y_edge=0
 
         #temporary
         self.time_explore=time_explore
@@ -151,21 +153,6 @@ class Drone():
             # self.mc.take_off(DEFAULT_HEIGHT)
             # self.clean_takeoff2()
             # self.case =self.state_zigzag["arrived"] #to get out of zigzag
-
-        #FIXME need to be implemented outside of drone class
-        if (self.edge == True and (self.case != self.state_zigzag["start"]) and (self.case != self.state_zigzag["arrived"]) ):
-            print('Edge far detected!')
-            #yaw_landing=position_estimate[2]
-            #must record goal pos before landing because variation can occur
-            #goal_x=self.est_x
-            #goal_y=self.est_y
-            self.edge=1
-            #find_platform_center()
-            self.mc.land()
-            #time.sleep(1)
-            #self.mc.take_off(DEFAULT_HEIGHT)
-            #clean_takeoff(self.mc, [goal_x, goal_y, yaw_landing])
-            #self.case =state_zigzag["arrived"] #to get out of zigzag
 
     def is_arrived(self):
         if self.case == self.state_zigzag['arrived']:
