@@ -37,7 +37,7 @@ def is_edge(logs):
         print('Not enough data')
         return False, 0, 0
 
-def find_platform_center(logs, box_limit_x):
+def find_platform_center(logs):
 
     #x1=Drone.est_x
     #y1=Drone.est_y
@@ -130,7 +130,7 @@ def find_platform_center(logs, box_limit_x):
             plt.savefig('first edge & second edge')
             """
             
-        if Drone.est_x > box_limit_x - Drone.start_x:
+        if Drone.est_x > Drone.boxborder_front - Drone.start_x:
             print("No center found, limite arene x reached, let's land for safety")
             Drone.mc.land()
             Drone.case = Drone.state_zigzag["arrived"]
