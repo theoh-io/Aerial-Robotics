@@ -22,8 +22,12 @@ from cflib.utils import uri_helper
 from cflib.utils.multiranger import Multiranger  
 from cflib.crazyflie.syncLogger import SyncLogger
 from cflib.positioning.position_hl_commander import PositionHlCommander
+from obs_avoid import obstacle_avoidance
 
 from drone import Drone
+
+import edge_detection
+
 
 URI = uri_helper.uri_from_env(default='radio://0/80/2M/E7E7E7E714')
 
@@ -169,355 +173,9 @@ def obstacle_mapping(range_left, range_right, range_front, range_back, occupancy
     return occupancy_grid
 
 # -------------------------------------------------------------------------------------------------------------
-def is_close(range):
-    MIN_DISTANCE = 0.5  # m
-
-    if range is None:
-        return False
-    else:
-        return range < MIN_DISTANCE
-
-def  obstacle_avoid_left_right():
-    global velocity_x, velocity_y, pos_estimate_before, state, first_detection, no_detection, from_left, from_right
-    global dronito
-
-    
-    if (is_close(multiranger.left) & (not from_right) & case==state_zigzag['left']):
-        print('state =1 left') 
-        from_left = 1
-        if (state==1) :
-            pos_estimate_before = dronito.est_x 
-            pos_estimate_before_y = dronito.est_y
-        velocity_y = 0.0
-        if (abs(pos_estimate_before_y - (-START_POS_Y) < THRESH_Y) or abs(pos_estimate_before_y - (BOX_LIMIT_Y -START_POS_Y) < THRESH_Y)):
-            return False
-        if abs(pos_estimate_before - (-START_POS_X)) > abs(pos_estimate_before - (BOX_LIMIT_X - START_POS_X)):
-            velocity_x = - VELOCITY
-        else :
-            velocity_x = VELOCITY
-        state = 2
-        return True
-
-    if (is_close(multiranger.right)  & (not from_left) & case==state_zigzag['right']):
-        print('state =1 right') 
-        from_right = 1
-        if (state==1) :
-            pos_estimate_before = dronito.est_x
-            pos_estimate_before_y = dronito.est_y
-        if (abs(pos_estimate_before_y - (-START_POS_Y) < THRESH_Y) or abs(pos_estimate_before_y - (BOX_LIMIT_Y -START_POS_Y) < THRESH_Y)):
-            return False
-        if abs(pos_estimate_before - (-START_POS_X)) > abs(pos_estimate_before - (BOX_LIMIT_X - START_POS_X)):
-            velocity_x = - VELOCITY
-        else :
-            velocity_x = VELOCITY
-        velocity_y = 0.0
-        state = 2
-        return True
-    
-    if (state == 2): #state 2
-        print('state =2')
-        velocity_x = 0.0
-        if (from_right):
-            velocity_y = -VELOCITY
-            dist = -0.1
-        if (from_left):
-            velocity_y = +VELOCITY 
-            dist = +0.1    
-        if (first_detection):
-            if (not(is_close(multiranger.back))): 
-                no_detection = no_detection + 1
-                if (no_detection >= 2): # for safety
-                    state = 3
-                    mc.move_distance(0, dist, 0, VELOCITY)
-        if (is_close(multiranger.back)):
-            first_detection =1
-            velocity_x = 0.05         
-        return True
-        
-    if (state == 3): #state 3
-        print('state =3')
-        velocity_y = 0
-        if abs(pos_estimate_before - (-START_POS_X)) > abs(pos_estimate_before - (BOX_LIMIT_X - START_POS_X)):
-            velocity_x = VELOCITY
-        else :
-            velocity_x = - VELOCITY
-        if (dronito.est_x < abs(pos_estimate_before + 0.03)):
-            print('fin state 3')
-            if (is_close(multiranger.right)):
-                ('right close going left')
-                velocity_y = VELOCITY
-                velocity_x = 0
-                return True 
-            elif (is_close(multiranger.left)):
-                ('left close going right')
-                velocity_y = -VELOCITY
-                velocity_x = 0
-                return True
-            state = 1
-            no_detection = 0
-            first_detection = 0
-            velocity_y = 0
-            velocity_x = 0
-            from_left =0
-            from_right =0
-            return False
-        return True  #check this indent
-    return False
-
-def  obstacle_avoid_front_back():
-    global velocity_x, velocity_y, pos_estimate_before, state, first_detection, no_detection, from_front, from_back
-    global dronito
-
-    if (is_close(multiranger.front) & (not from_back) & (case==state_zigzag['forward1'] or case==state_zigzag['start'] or case==state_zigzag['forward2'] )): 
-        print('state =1 front')
-        from_front = 1
-        if (state==1) :
-            pos_estimate_before = dronito.est_x
-        if abs(pos_estimate_before - (-START_POS_Y)) > abs(pos_estimate_before - BOX_LIMIT_Y):
-            velocity_y = - VELOCITY
-        else :
-            velocity_y = VELOCITY
-        velocity_x = 0
-        state = 2
-        return True
-
-    if (is_close(multiranger.back) & (not from_front) & 0): #jamais pour le moment
-        print('state =1 back')
-        from_back = 1
-        if (state==1) :
-            pos_estimate_before = dronito.est_y
-        velocity_y = - VELOCITY
-        velocity_x = 0
-        state = 2
-        return True
-    
-    if (state == 2): #state 2
-        print('state =2')
-        velocity_y = 0.0
-        if (from_front):
-            velocity_x = VELOCITY
-            dist = 0.1
-        if (from_back):
-            velocity_x = -VELOCITY
-            dist = -0.1      
-        if (first_detection):
-            if (not(is_close(multiranger.left))): 
-                no_detection = no_detection + 1
-                if (no_detection >= 2): # for safety
-                    state = 3
-                    mc.move_distance(dist, 0, 0, VELOCITY)
-        if (is_close(multiranger.left)):
-            first_detection =1
-            velocity_y = - 0.05  
-        return True
-        
-    if (state == 3): #state 3
-        print('state =3')
-        if abs(pos_estimate_before - (-START_POS_Y)) > abs(pos_estimate_before - BOX_LIMIT_Y):
-            velocity_y = + VELOCITY
-        else :
-            velocity_y = - VELOCITY
-        velocity_x = 0
-        print(dronito.est_y)
-        print(pos_estimate_before)
-        if (dronito.est_y < abs(pos_estimate_before + 0.03)):
-            print('fin state 3')
-            if (is_close(multiranger.back)):
-                velocity_y = 0
-                velocity_x = VELOCITY
-                return True
-            elif (is_close(multiranger.front)):
-                velocity_y = 0
-                velocity_x = -VELOCITY
-                return True
-            state = 1
-            no_detection = 0
-            first_detection = 0
-            velocity_y = 0
-            velocity_x = 0
-            from_front =0
-            from_back =0
-            return False
-        return True  #check this indent
-    return False
-
-def obstacle_avoidance():
-    #print(case)
-#il faut penser au cas ou la vitesse n'est pas dans la direction de l'obstacle
-    if ((is_close(multiranger.left) or is_close(multiranger.right) or from_left or from_right) & (from_front ==0) & (from_back == 0)):# & (case==state_zigzag["left"] or case==state_zigzag["right"])):
-        return obstacle_avoid_left_right()
-    elif ((is_close(multiranger.front) or is_close(multiranger.back) or from_front or from_back) & (from_right ==0) & (from_left == 0)):# & (case==state_zigzag["forward1"] or case==state_zigzag["forward2"])): 
-        #print(case)
-        return obstacle_avoid_front_back()
-    return False
 
 
 # Edge detection functions ---------------------------------------------------------------------------------
-
-def is_edge_2():
-    global logs
-
-    MIN_EDGE2 = 50  # mm
-    logs_copy2=logs[~np.all(logs == 0, axis=1)]
-
-    if len(logs_copy2) > 100:
-        #z_2=logs_copy2[-1,3]
-        #z_1=logs_copy2[-50,3]
-        
-        z_2=np.max(logs_copy2[-100:,3])
-        idx_2=np.argmax(logs_copy2[-100:,3])
-        z_1=np.min(logs_copy2[-100:,3])
-        idx_1=np.argmin(logs_copy2[-100:,3])
-        x1=logs_copy2[len(logs_copy2)-100+idx_1,0]/1000
-        y1=logs_copy2[len(logs_copy2)-100+idx_1,1]/1000
-
-        if abs(z_1-z_2) > MIN_EDGE2:
-            print('abs edge 2: ', abs(z_1-z_2))
-            #print('z1: ',z_1)
-            #print('z2: ',z_2)
-            #print('idx_1: ',idx_1)
-            #print('idx_2: ',idx_2)
-            #print('x1: ',x1)
-            #print('y1: ',y1)
-            return True, x1, y1
-        else:
-            return False, 0, 0
-    else:
-        print('Not enough data')
-        return False, 0, 0
-
-def find_platform_center():
-    global edge, case, logs, state_zigzag, x_edge, y_edge 
-
-    x1=x_edge
-    y1=y_edge
-    
-    """
-    x1_bis=position_estimate[0]
-    y1_bis=dronito.est_y
-
-    print(x1,' ',x1_bis)
-    print(y1,' ',y1_bis)
-
-    plt.figure()
-    plt.axis('equal')
-    plt.scatter([x1,x1_bis],[y1,y1_bis])
-    plt.annotate('x1',(x1,y1))
-    plt.annotate('x1_bis',(x1_bis,y1_bis))
-    plt.savefig('first edge')
-    """
-
-    if case == state_zigzag["right"]:
-        mc.right(0.25)
-        time.sleep(1)
-
-    if case == state_zigzag["left"]:
-        mc.left(0.25)
-        time.sleep(1)
-
-    """
-    while(edge == True):
-        print('still close')
-        edge= is_edge_2()[0]
-    """
-    
-    #logs = np.zeros([100000,4])
-    mc.back(0.4)
-    time.sleep(1)
-
-    if case == state_zigzag["right"]:
-        mc.start_left()
-        while(dronito.est_y<(y1-0.18)):
-            print('going left ',dronito.est_y,' ',y1)
-            continue
-        x2_before=dronito.est_x
-        y2_before=dronito.est_y
-
-    if case == state_zigzag["left"]:
-        mc.start_right()
-        while(dronito.est_y>y1+0.18):
-            print('going right ',dronito.est_y,' ',y1)
-            continue
-        x2_before=dronito.est_x
-        y2_before=dronito.est_y
-
-    mc.start_forward()
-    print('going forward')
-    edge=False
-
-    while(edge == False):
-        [edge,x_edge,y_edge]=is_edge_2()
-        if (edge==True):
-            """
-            print('Edge 2 detected!')
-            x2_bis=position_estimate[0]
-            y2_bis=position_estimate[1]
-            """
-            x2=x_edge
-            y2=y_edge
-
-            """
-            print('x1: ',x1,'x1_bis: ',x1_bis)
-            print('y1: ',y1,'y1_bis: ',y1_bis)
-            print('x2: ',x2,'x2_bis: ',x2_bis)
-            print('y2: ',y2,'y2_bis: ',y2_bis)
-
-            plt.figure()
-            plt.axis('equal')
-            plt.scatter([x1,x1_bis,x2,x2_bis],[y1,y1_bis,y2,y2_bis])
-            plt.annotate('x1',(x1,y1))
-            plt.annotate('x1_bis',(x1_bis,y1_bis))
-            plt.annotate('x2',(x2,y2))
-            plt.annotate('x2_bis',(x2_bis,y2_bis))
-            plt.savefig('first edge & second edge')
-            """
-            
-        if dronito.est_x > BOX_LIMIT_X - START_POS_X:
-            print("No center found, limite arene x reached, let's land for safety")
-            mc.land()
-            case =state_zigzag["arrived"]
-            return
-
-    dX=0.15
-    dY=0
-
-    #if case == state_zigzag["right"]:
-    #    dY=y1-y2-0.15
-    #if case == state_zigzag["left"]:
-    #    dY=-(y1-y2)-0.15
-    
-    #mc.move_distance(dX,dY,0)
-
-    mc.forward(0.02)
-    goal_x=dronito.est_x
-    goal_y=dronito.est_y
-
-    time.sleep(2)
-    #default velocity 
-    # VELOCITY = 0.2
-    mc.land(velocity=0.1)
-    case =state_zigzag["arrived"]
-
-    x0=x2+dX
-    y0=y2+dY
-    print('x1: ',x1,'y1: ',y1)
-    print('x2: ',x2,'y2: ',y2)
-    print('x0: ',x0,'y0: ',y0)
-    print('goal_x: ',goal_x,'goal_y: ',goal_y)
-
-    plt.figure()
-    plt.axis('equal')
-    plt.plot(logs[:,0]/1000,logs[:,1]/1000)
-    plt.scatter([x1,x2_before,x2,x0,goal_x],[y1,y2_before,y2,y0,goal_y])
-    plt.annotate('x1',(x1,y1))
-    plt.annotate('x2_before',(x2_before,y2_before))
-    plt.annotate('x2',(x2,y2))
-    plt.annotate('x0',(x0,y0))
-    plt.annotate('goal',(goal_x,goal_y))
-    rectangle = plt.Rectangle((x0-0.15,y0-0.15), 0.30, 0.30,fill=None)
-    plt.gca().add_patch(rectangle)
-    plt.savefig('platform center')    
-
 
 if __name__ == '__main__':
 
@@ -563,16 +221,9 @@ if __name__ == '__main__':
                 # explored_list = []
                 
                 #variables needed for obstacle avoidance
-                pos_estimate_before = 0
-                velocity_y = 0
-                velocity_x = 0
-                state = 1
-                first_detection = 0
-                no_detection = 0
-                from_front =0
-                from_back =0
-                from_left =0
-                from_right =0
+                velocity_left = 0
+                velocity_front = 0
+
                 
                 #temporary intentional disturbance to regulate yaw
                 time.sleep(1)
@@ -585,7 +236,7 @@ if __name__ == '__main__':
 
                 while(1):
                     #print(obstacle_avoidance())
-                    if True:#(obstacle_avoidance() == False):
+                    if (obstacle_avoidance(multiranger.left, multiranger.right, multiranger.front, multiranger.back) == False):
                         #if no obstacle is being detected let zigzag manage the speeds
                         if not dronito.is_arrived():
 
@@ -596,8 +247,10 @@ if __name__ == '__main__':
                             # occupancy_grid = obstacle_mapping(multiranger.left, multiranger.right, multiranger.front, multiranger.back, occupancy_grid, position_estimate[0], position_estimate[1])
                             #print(explored_list)
                             
-                            #if not dronito.is_starting():
-                                #[edge,x_edge,y_edge] = is_edge_2()
+                            if not dronito.is_starting():
+                                [dronito.edge,dronito.x_edge,dronito.y_edge] = edge_detection.is_edge(logs)
+                                if dronito.edge == True:
+                                    edge_detection.find_platform_center(logs)
                             dronito.zigzag()
                         else:
                             print("here!!!")
@@ -610,7 +263,7 @@ if __name__ == '__main__':
                     else:
                         print("obstacle av = True")
                         #obstacle detected then gives manually the speeds defined by obstacle avoidance
-                        mc.start_linear_motion(velocity_x, velocity_y, 0)
+                        mc.start_linear_motion(velocity_left, velocity_front, 0)
                         time.sleep(0.1)
         #stop logging
         print("in logcong")

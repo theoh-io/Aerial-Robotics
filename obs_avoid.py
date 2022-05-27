@@ -1,4 +1,3 @@
-
 from cflib.utils.multiranger import Multiranger
 from drone import Drone
 
@@ -6,6 +5,9 @@ from drone import Drone
 # const
 VELOCITY = 0.2
 THRESH_Y = 0.2
+LOW_VELOCITY = 0.05
+BOX_LIMIT_X = 3 #5
+BOX_LIMIT_Y = 1 #3
 
 #variables
 pos_estimate_before_x = 0
@@ -22,55 +24,73 @@ from_left =0
 from_right =0
 obstacle_at_left = 0
 obstacle_at_right = 0
+obstacle_at_front = 0
+obstacle_at_back = 0
+ 
+
 
 def is_close(range):
-    MIN_DISTANCE = 0.5  # m
+    MIN_DISTANCE = 0.4  # m
 
     if range is None:
         return False
     else:
         return range < MIN_DISTANCE
 
-def  obstacle_avoid_left_right():
-    global velocity_front, velocity_left, pos_estimate_before_x, state, first_detection, no_detection, from_left, from_right, pos_estimate_before_y, obstacle_at_front,obstacle_at_back
+
+def  obstacle_avoid_left_right(multiranger_left, multiranger_right, multiranger_front, multiranger_back):
+    global velocity_front, velocity_left, pos_estimate_before_x, state, first_detection, no_detection, from_left, from_right, pos_estimate_before_y, obstacle_at_front, obstacle_at_back
     global case
     
-    if (is_close(multiranger.left) & (not (from_right or from_front or from_back)) & case==state_zigzag['left'] ):
+    if (is_close(multiranger_left) and (not (from_right)) and case==Drone.state_zigzag['left'] ):
         print('state =1 left') 
-
+        print(multiranger_left)
+        print(is_close(multiranger_left))
         from_left = 1
 
         if (state==1) :
-            pos_estimate_before_x = position_estimate[0] #x front/back
-            pos_estimate_before_y = position_estimate[1] #y left/right
-        if (abs(pos_estimate_before_y - (Drone.boxborder_right) < THRESH_Y) or abs(pos_estimate_before_y - (Drone.boxborder_left) < THRESH_Y)): #obstacle very close to y border
-            case=state_zigzag["forward1"]
-            return False
-        if abs(pos_estimate_before_x - (Drone.boxborder_back)) > abs(pos_estimate_before_x - (Drone.boxborder_front)): #back better than front?
-            velocity_front = - VELOCITY
-        else :
-            velocity_front = VELOCITY
-        velocity_left = 0.0
-        state = 2
-        return True
-
-    if (is_close(multiranger.right)  & (not (from_left or from_front or from_back)) & case==state_zigzag['right']):
-        print('state =1 right') 
+            pos_estimate_before_x = Drone.est_x #x front/back
+            pos_estimate_before_y = Drone.est_y #y left/right
         
-        from_right = 1
-        
-        if (state==1) :
-            pos_estimate_before_x = position_estimate[0]
-            pos_estimate_before_y = position_estimate[1]
-        if (abs(pos_estimate_before_y - (Drone.boxborder_right) < THRESH_Y) or abs(pos_estimate_before_y - (Drone.boxborder_left) < THRESH_Y)): #obstacle very close to y border
-            case=state_zigzag["forward2"]
+        if (abs(pos_estimate_before_y - (BOX_LIMIT_Y)) < THRESH_Y): #obstacle very close to y border prendre en cond min dist
+            print("too close to border")
+            case=Drone.state_zigzag["forward1"]
+            from_left = 0
             return False
-        if abs(pos_estimate_before_x - (Drone.boxborder_back)) > abs(pos_estimate_before_x - (Drone.boxborder_front)): #back better than front?
+        
+        if abs(pos_estimate_before_x) > abs(pos_estimate_before_x - (BOX_LIMIT_X )): #back better than front?
             obstacle_at_front = 1
             velocity_front = - VELOCITY
         else :
             obstacle_at_back = 1
             velocity_front = VELOCITY
+        velocity_left = 0.0
+        state = 2
+        return True
+
+    if (is_close(multiranger_right)  and (not (from_left)) and case==Drone.state_zigzag['right']):
+        print('state =1 right') 
+        print(multiranger_left)
+        print(is_close(multiranger_left))
+        from_right = 1
+        
+        if (state==1) :
+            pos_estimate_before_x = Drone.est_x
+            pos_estimate_before_y = Drone.est_y
+        
+        if (abs(pos_estimate_before_y) < THRESH_Y): #obstacle very close to y border
+            print("too close to border")
+            case=Drone.state_zigzag["forward2"]
+            from_right = 0
+            return False  
+        
+        if abs(pos_estimate_before_x) > abs(pos_estimate_before_x - (BOX_LIMIT_X)): #back better than front?
+            obstacle_at_front = 1
+            velocity_front = - VELOCITY
+        else :
+            obstacle_at_back = 1
+            velocity_front = VELOCITY
+        
         velocity_left = 0.0
         state = 2
         return True
@@ -80,48 +100,54 @@ def  obstacle_avoid_left_right():
         velocity_front = 0.0
         if (from_right):
             velocity_left = -VELOCITY
-            dist = -0.1
+            #dist = -0.1
         if (from_left):
             velocity_left = +VELOCITY 
-            dist = +0.1
+            #dist = +0.1
         if(obstacle_at_back):
+            print('obstacle_at_back')
             if (first_detection):
-                if (not(is_close(multiranger.back))): 
+                print('first_detection')
+                if (not(is_close(multiranger_back))):
+                    print('not close back')
                     no_detection = no_detection + 1
                     if (no_detection >= 2): # for safety
                         state = 3
-                        mc.move_distance(0, dist, 0, VELOCITY)
-            if (is_close(multiranger.back)):
+                        #mc.move_distance(0, dist, 0, VELOCITY)
+            if (is_close(multiranger_back)):
                 first_detection =1
-                velocity_front = 0.05
+                velocity_front = LOW_VELOCITY
         if(obstacle_at_front):
+            print('obstacle_at_front')
             if (first_detection):
-                if (not(is_close(multiranger.front))): 
+                print('first_detection')
+                if (not(is_close(multiranger_front))): 
+                    print('not close front')
                     no_detection = no_detection + 1
-                    if (no_detection >= 2): # for safety
+                    if (no_detection >= 1): # for safety
                         state = 3
-                        mc.move_distance(0, dist, 0, VELOCITY)
-            if (is_close(multiranger.front)):
+                        #mc.move_distance(0, dist, 0, VELOCITY)
+            if (is_close(multiranger_front)):
                 first_detection =1
-                velocity_front = - 0.05
+                velocity_front = - LOW_VELOCITY
                 
         return True
         
     if (state == 3): #state 3
         print('state =3')
         velocity_left = 0
-        if abs(pos_estimate_before_x - (Drone.boxborder_back)) > abs(pos_estimate_before_x - (Drone.boxborder_front)):
+        if abs(pos_estimate_before_x) > abs(pos_estimate_before_x - (BOX_LIMIT_X)): #back better than front?
             velocity_front = VELOCITY
         else :
             velocity_front = - VELOCITY
-        if (position_estimate[0] < abs(pos_estimate_before_x + 0.03)):
+        if (Drone.est_x < abs(pos_estimate_before_x + 0.03)):
             print('fin state 3')
-            if (is_close(multiranger.right)):
+            if (is_close(multiranger_right)):
                 ('right close going left')
                 velocity_left = VELOCITY
                 velocity_front = 0
                 return True 
-            elif (is_close(multiranger.left)):
+            elif (is_close(multiranger_left)):
                 ('left close going right')
                 velocity_left = -VELOCITY
                 velocity_front = 0
@@ -135,19 +161,21 @@ def  obstacle_avoid_left_right():
             from_right =0
             pos_estimate_before_x = 0
             pos_estimate_before_y = 0
+            obstacle_at_back = 0
+            obstacle_at_front = 0
             return False
         return True  #check this indent
     return False
 
-def  obstacle_avoid_front_back():
+def  obstacle_avoid_front_back(multiranger_left, multiranger_right, multiranger_front, multiranger_back):
     global velocity_front, velocity_left, pos_estimate_before_y, state, first_detection, no_detection, from_front, from_back, obstacle_at_left, obstacle_at_right
 
-    if (is_close(multiranger.front) & (not from_back) & (case==state_zigzag['forward1'] or case==state_zigzag['start'] or case==state_zigzag['forward2'] )): 
+    if (is_close(multiranger_front) and (not from_back) and (case==Drone.state_zigzag['forward1'] or case==Drone.state_zigzag['start'] or case==Drone.state_zigzag['forward2'] )): 
         print('state =1 front')
         from_front = 1
         if (state==1) :
-            pos_estimate_before_y = position_estimate[1] #y pos left/right
-            if abs(pos_estimate_before_y - (Drone.boxborder_right)) > abs(pos_estimate_before_y - (Drone.boxborder_left)): # if distance plus grande a droite ? 
+            pos_estimate_before_y = Drone.est_y #y pos left/right
+            if abs(pos_estimate_before_y) > abs(pos_estimate_before_y - (BOX_LIMIT_Y)): # if distance plus grande a droite ? 
                 obstacle_at_left =1
                 velocity_left = - VELOCITY
             else :
@@ -157,13 +185,14 @@ def  obstacle_avoid_front_back():
         state = 2
         return True
 
-    if (is_close(multiranger.back) & (not from_front) & case==state_zigzag['arrived']): #jamais pour le moment
+    if (is_close(multiranger_back) and (not from_front) and ((case==Drone.state_zigzag['arrived']) or case==Drone.state_zigzag['start'])): #jamais pour le moment juste arrived
         print('state =1 back')
         from_back = 1
+        print(case)
         if (state==1) :
-            pos_estimate_before_y = position_estimate[1] #y pos left/right
-            if abs(pos_estimate_before_y - (Drone.boxborder_right)) > abs(pos_estimate_before_y - Drone.boxborder_left): # if distance plus grande a droite ? 
-                obstacle_at_left =1
+            pos_estimate_before_y = Drone.est_y #y pos left/right
+            if (abs(pos_estimate_before_y) > abs(pos_estimate_before_y - BOX_LIMIT_Y)): # if distance plus grande a droite ? 
+                obstacle_at_left = 1
                 velocity_left = - VELOCITY
             else :
                 obstacle_at_right =1
@@ -183,24 +212,24 @@ def  obstacle_avoid_front_back():
             # dist = -0.1
         if (obstacle_at_left):      
             if (first_detection):
-                if (not(is_close(multiranger.left))): 
+                if (not(is_close(multiranger_left))): 
                     no_detection = no_detection + 1
                     if (no_detection >= 2): # for safety
                         state = 3
                         # mc.move_distance(dist, 0, 0, VELOCITY)
-            if (is_close(multiranger.left)):
+            if (is_close(multiranger_left)):
                 first_detection =1
-                velocity_left = - 0.05 
+                velocity_left = - LOW_VELOCITY 
         if (obstacle_at_right):      
             if (first_detection):
-                if (not(is_close(multiranger.right))): 
+                if (not(is_close(multiranger_right))): 
                     no_detection = no_detection + 1
                     if (no_detection >= 2): # for safety
                         state = 3
                         # mc.move_distance(dist, 0, 0, VELOCITY)
-            if (is_close(multiranger.right)):
+            if (is_close(multiranger_right)):
                 first_detection =1
-                velocity_left = 0.05  
+                velocity_left = LOW_VELOCITY  
         return True
         
     if (state == 3): #state 3
@@ -210,13 +239,13 @@ def  obstacle_avoid_front_back():
         else :
             velocity_left = - VELOCITY
         velocity_front = 0
-        if (position_estimate[1] < abs(pos_estimate_before_y + 0.03)):
+        if (Drone.est_y < abs(pos_estimate_before_y + 0.03)):
             print('fin state 3')
-            if (is_close(multiranger.back)):
+            if (is_close(multiranger_back)):
                 velocity_left = 0
                 velocity_front = VELOCITY
                 return True
-            elif (is_close(multiranger.front)):
+            elif (is_close(multiranger_front)):
                 velocity_left = 0
                 velocity_front = -VELOCITY
                 return True
@@ -230,17 +259,14 @@ def  obstacle_avoid_front_back():
             obstacle_at_left =0
             obstacle_at_right =0
             pos_estimate_before_y =0
-            pos_estimate_before_x =0
             return False
         return True  #check this indent
     return False
 
-def obstacle_avoidance():
-    #print(case)
-#il faut penser au cas ou la vitesse n'est pas dans la direction de l'obstacle
-    if ((is_close(multiranger.left) or is_close(multiranger.right) or from_left or from_right) & (from_front ==0) & (from_back == 0)):
-        return obstacle_avoid_left_right()
-    elif ((is_close(multiranger.front) or is_close(multiranger.back) or from_front or from_back) & (from_right ==0) & (from_left == 0)): 
-        #print(case)
-        return obstacle_avoid_front_back()
+def obstacle_avoidance(multiranger_left, multiranger_right, multiranger_front, multiranger_back):
+    if ((is_close(multiranger_left) or is_close(multiranger_right) or from_left or from_right) and (from_front ==0) and (from_back == 0)):
+        return obstacle_avoid_left_right(multiranger_left, multiranger_right, multiranger_front, multiranger_back)
+    elif ((is_close(multiranger_front) or is_close(multiranger_back) or from_front or from_back) and (from_right ==0) and (from_left == 0)): 
+        return obstacle_avoid_front_back(multiranger_left, multiranger_right, multiranger_front, multiranger_back)
     return False
+
