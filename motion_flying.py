@@ -31,19 +31,20 @@ URI = uri_helper.uri_from_env(default='radio://0/80/2M/E7E7E7E714')
 DEFAULT_HEIGHT = 0.5 #1
 
 FOV_ZRANGER=math.radians(2.1)
-BOX_LIMIT_X = 2 #5
-BOX_LIMIT_Y = 0.7 #3
+BOX_LIMIT_X = 2.5 #5
+BOX_LIMIT_Y = 0.5 #3
 
 START_POS_X = 0
 START_POS_Y = 0
-GOAL_ZONE_X= 0.8
+GOAL_ZONE_X= 1.5
 START_EXPLORE_X = GOAL_ZONE_X-START_POS_X
 THRESH_Y = 0.5
 #variables needed for obstacle avoidance
 VELOCITY = 0.2
 
 
-TIME_EXPLORE= 3
+TIME_EXPLORE= 15
+TIME_EXPLORE= 15
 
 RESOLUTION_GRID=0.20 # m
 MIN_DISTANCE_OCCUP_GRIG = 3  # m
@@ -551,7 +552,7 @@ if __name__ == '__main__':
 
         with MotionCommander(scf, default_height=DEFAULT_HEIGHT) as mc:
             with Multiranger(scf) as multiranger:
-                dronito=Drone(mc, start_x=START_POS_X, start_y=START_POS_Y, time_explore=TIME_EXPLORE, x_offset=0.25)
+                dronito=Drone(mc, start_x=START_POS_X, start_y=START_POS_Y, x_offset=0.25)
                 #little sleep needed for takeoff
                 time.sleep(1)
                 
@@ -599,8 +600,11 @@ if __name__ == '__main__':
                                 #[edge,x_edge,y_edge] = is_edge_2()
                             dronito.zigzag()
                         else:
-                            dronito.go_back()
-                            break
+                            print("here!!!")
+                            if not dronito.is_arrived2():
+                                dronito.zigzag_back()
+                            else:
+                                break
                         
                         time.sleep(freq_main)
                     else:

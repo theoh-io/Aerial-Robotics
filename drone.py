@@ -4,19 +4,22 @@ import time
 # Unit: meter
 DEFAULT_HEIGHT = 0.5 #1
 
-BOX_LIMIT_X = 2 #5
-BOX_LIMIT_Y = 0.7 #3
+BOX_LIMIT_X = 3 #5
+BOX_LIMIT_Y = 0.5 #3
 
 #START_POS_X = 0
 #START_POS_Y = 0
-GOAL_ZONE_X= 0.8
-TIME_EXPLORE= 7
+GOAL_ZONE_X= 1.2
+START_ZONE_X=0.2
+TIME_EXPLORE=20
+TIME_EXPLORE2=20
+TIME_EXPLOREBOX=15 
 #variables needed for obstacle avoidance
 VELOCITY = 0.2
 EPSYLON=0.0001
 
 class Drone():
-    def __init__(self, mc, start_x, start_y, time_explore, x_offset=0.25, verbose=True):
+    def __init__(self, mc, start_x, start_y, x_offset=0.25, verbose=True):
         self.verbose=verbose
         self.mc = mc
 
@@ -39,17 +42,32 @@ class Drone():
         # self.boxborder_front=BOX_LIMIT_X
         # self.boxborder_back=0
         # self.dist_explore=GOAL_ZONE_X
+        # self.dist_explore2=START_ZONE_X
 
         self.boxborder_left=BOX_LIMIT_Y-start_y
         self.boxborder_right=-start_y
         self.boxborder_front=BOX_LIMIT_X-start_x
         self.boxborder_back=-start_x
         self.dist_explore=GOAL_ZONE_X-start_x
+        self.dist_explore2=START_ZONE_X-start_x
         #zigzag attributes
         self.state_zigzag={'start':-1, 'left':0, 'forward1':1, 'right':2, 'forward2':3, 'back2left':4, 'arrived':5}
         self.case=self.state_zigzag["start"]
+
+        self.case2=self.state_zigzag["start"]
+
         self.start_time=time.time()
+        self.start_time2=0
         self.x_offset=x_offset
+
+        #attributes: back_searching
+        self.zone_x=0.2
+        self.zone_y=0.2
+        self.pos_x=0
+        self.pos_y=0
+        self.x_reached=0
+        self.y_reached=0
+
         #attributes freq reg yaw
         self.time_yaw=0 #to ompare with timestep
         self.timestep=1
@@ -61,8 +79,6 @@ class Drone():
         #attributes edge detection
         self.edge=0
 
-        #temporary
-        self.time_explore=time_explore
 
 
     def update_est(self, x, y, z, z_range, yaw):
@@ -171,18 +187,167 @@ class Drone():
         if self.case == self.state_zigzag['arrived']:
             return True
         return False
+    
+    def is_arrived2(self):
+        if self.case2 == self.state_zigzag['arrived']:
+            return True
+        return False
+
 
     def is_starting(self):
         if self.case == self.state_zigzag['start']:
             return True
         return False
 
+    def zigzag_back(self):
+        print("in zigzag back")
+        if self.case2==self.state_zigzag["start"]:
+            print('start_zz2')
+            self.mc.start_back()
+        if (self.case2==self.state_zigzag["start"] and self.est_x<self.dist_explore) or self.case2 == self.state_zigzag["back2left"]:
+            self.regulate_yaw(0, self.est_yaw)
+            self.case2=self.state_zigzag["left"]
+            self.mc.start_left()
+            print('left')
+        elif (self.case2==self.state_zigzag["left"] and self.est_y > self.boxborder_left) :
+            self.regulate_yaw(0, self.est_yaw)
+            self.case2=self.state_zigzag["forward1"]
+            print('forward 1')
+            self.mc.back(self.x_offset)
+        elif self.case2 == self.state_zigzag["forward1"]:
+            self.regulate_yaw(0, self.est_yaw)
+            self.case2=self.state_zigzag["right"]
+            print('right')
+            self.mc.start_right()
+        elif self.case2 == self.state_zigzag["right"] and  self.est_y < self.boxborder_right:
+            self.regulate_yaw(0, self.est_yaw)
+            self.case2 = self.state_zigzag["forward2"]
+            print('forward 2')
+            self.mc.back(self.x_offset)
+            self.case2=self.state_zigzag["back2left"]
+            print('back2left')
+
+        #Temporaire: condition d'arret si la limite de l'arene en x 
+        if self.est_x > self.boxborder_front:
+            print("Seulement un edge détecté, pas le deuxième, limite arene x reached, let's land for safety")
+            self.mc.land()
+            time.sleep(1)
+            self.case =self.state_zigzag["arrived"]
+        
+        #Temporaire condition de retour basé sur le temps de vol
+        if(time.time()-self.start_time2>TIME_EXPLORE2):
+            self.goal_reached2()
+            
+
+        #FIXME need to be implemented outside of drone class
+        if (self.edge == True and (self.case != self.state_zigzag["start"]) and (self.case != self.state_zigzag["arrived"]) ):
+            print('Edge far detected!')
+            #yaw_landing=position_estimate[2]
+            #must record goal pos before landing because variation can occur
+            #goal_x=self.est_x
+            #goal_y=self.est_y
+            self.edge=1
+            #find_platform_center()
+            self.mc.land()
+            #time.sleep(1)
+            #self.mc.take_off(DEFAULT_HEIGHT)
+            #clean_takeoff(self.mc, [goal_x, goal_y, yaw_landing])
+            #self.case =state_zigzag["arrived"] #to get out of zigzag
+
+
+    def zigzag_box(self):
+        '''
+        startbox_x, y position to start exploring
+        limit_x,y box to explore inside
+        FIXME implement non blocking back
+        FIXME avoid getting out of the arena
+        '''
+        
+        if  self.case2==self.state_zigzag["start"] or self.case2 == self.state_zigzag["back2left"]:
+            self.regulate_yaw(0, self.est_yaw)
+            self.case2=self.state_zigzag["left"]
+            self.mc.start_left()
+            print('left')
+        elif self.case2==self.state_zigzag["left"] and self.est_y > (self.pos_y+self.zone_y) :
+            self.regulate_yaw(0, self.est_yaw)
+            self.case2=self.state_zigzag["forward1"]
+            print('forward 1')
+            self.mc.back(self.x_offset)
+        elif self.case2 == self.state_zigzag["forward1"]:
+            self.regulate_yaw(0, self.est_yaw)
+            self.case2=self.state_zigzag["right"]
+            print('right')
+            self.mc.start_right()
+        elif self.case2 == self.state_zigzag["right"] and  self.est_y < (self.pos_y-self.zone_y):
+            self.regulate_yaw(0, self.est_yaw)
+            self.case2 = self.state_zigzag["forward2"]
+            print('forward 2')
+            self.mc.back(self.x_offset)
+            self.case2=self.state_zigzag["back2left"]
+            print('back2left')
+
+        #Temporaire: condition d'arret si la limite de la box en x 
+        if self.est_x < self.pos_x-self.zone_x:
+            print("Exploration box terminée sans succès")
+            self.goal_reached2()
+        
+        #Temporaire condition de retour basé sur le temps de vol
+        if(time.time()-self.start_time2>TIME_EXPLOREBOX):
+            self.goal_reached2()
+            
+
+        #FIXME need to be implemented outside of drone class
+        if (self.edge == True and (self.case != self.state_zigzag["start"]) and (self.case != self.state_zigzag["arrived"]) ):
+            print('Edge far detected!')
+            #yaw_landing=position_estimate[2]
+            #must record goal pos before landing because variation can occur
+            #goal_x=self.est_x
+            #goal_y=self.est_y
+            self.edge=1
+            #find_platform_center()
+            self.mc.land()
+            #time.sleep(1)
+            #self.mc.take_off(DEFAULT_HEIGHT)
+            #clean_takeoff(self.mc, [goal_x, goal_y, yaw_landing])
+            #self.case =state_zigzag["arrived"] #to get out of zigzag
+
+    def back_searching(self):
+        #given goal position (initial) and start (objective) define a zone around to start searching for
+        # First reach the zone
+        #temporary: dumb behavior to reach the zone later => Waypoints
+        if((self.est_x - self.start_x)<self.zone_x):
+            self.x_reached=1
+        else:
+            self.x_reached=0
+        if((self.est_y - self.start_y)<self.zone_y):
+            self.y_reached=1
+        else:
+            self.y_reached=0
+
+        if(self.x_reached==0):
+            self.mc.start_back()
+        elif(self.y_reached==0):
+            self.mc.start_right()
+        else:
+            #parametric zigzag to restrict to a specific zone
+            if self.pos_x==0 and self.pos_y==0:
+                self.pos_x=self.est_x
+                self.pos_y=self.est_y
+                print("starting of the box :", self.pos_x, self.pos_y)
+            self.zigzag_box()
+
+
+
+
+
+        # zigzagback    
+
     def go_back(self):
         #first goes to 0 in x
-        dist_x=self.goal_x
+        dist_x=self.goal_x-self.start_x
         self.mc.back(dist_x)
         #goes to 0 in y
-        dist_y=self.goal_y
+        dist_y=self.goal_y-self.start_x
         self.mc.right(dist_y)
         self.mc.land()
 
@@ -274,6 +439,21 @@ class Drone():
         self.clean_takeoff2()
         #clean_takeoff(self.mc, [goal_x, goal_y, yaw_landing])
         self.case =self.state_zigzag["arrived"] #to get out of zigzag
+        self.start_time2=time.time()
+        
+
+    def goal_reached2(self):
+            #when goal reached needs to: 
+            #record goal position before landing
+            #land
+            #take off
+            #update flag for using 2 estimation function
+            #switch state_zigzag
+
+            print("final goal reached")
+            self.mc.land()
+            self.case2 =self.state_zigzag["arrived"] #to get out of zigzag
+        
         
 
         
