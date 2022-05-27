@@ -250,7 +250,7 @@ if __name__ == '__main__':
                             if not dronito.is_starting():
                                 [dronito.edge,dronito.x_edge,dronito.y_edge] = edge_detection.is_edge(logs)
                                 if dronito.edge == True:
-                                    edge_detection.find_platform_center(logs)
+                                    edge_detection.find_platform_center(logs,dronito)
                             dronito.zigzag()
                         else:
                             print("here!!!")
