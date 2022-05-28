@@ -22,7 +22,7 @@ from cflib.utils import uri_helper
 from cflib.utils.multiranger import Multiranger  
 from cflib.crazyflie.syncLogger import SyncLogger
 from cflib.positioning.position_hl_commander import PositionHlCommander
-from obs_avoid import obstacle_avoidance
+from obs_avoid import *
 
 from drone import Drone
 
@@ -35,12 +35,12 @@ URI = uri_helper.uri_from_env(default='radio://0/80/2M/E7E7E7E714')
 DEFAULT_HEIGHT = 0.5 #1
 
 FOV_ZRANGER=math.radians(2.1)
-BOX_LIMIT_X = 2.5 #5
-BOX_LIMIT_Y = 0.1 #3
+BOX_LIMIT_X = 1.7 #5
+BOX_LIMIT_Y = 2.2 #3
 
 START_POS_X = 0
 START_POS_Y = 0
-GOAL_ZONE_X= 1.5
+GOAL_ZONE_X= 0.5
 START_EXPLORE_X = GOAL_ZONE_X-START_POS_X
 THRESH_Y = 0.5
 #variables needed for obstacle avoidance
@@ -236,7 +236,7 @@ if __name__ == '__main__':
 
                 while(1):
                     #print(obstacle_avoidance())
-                    if (obstacle_avoidance(multiranger.left, multiranger.right, multiranger.front, multiranger.back) == False):
+                    if (obstacle_avoidance(multiranger.left, multiranger.right, multiranger.front, multiranger.back, dronito) == False):
                         #if no obstacle is being detected let zigzag manage the speeds
                         if not dronito.is_arrived():
 
@@ -249,6 +249,7 @@ if __name__ == '__main__':
                             
                             if not dronito.is_starting():
                                 [dronito.edge,dronito.x_edge,dronito.y_edge] = edge_detection.is_edge(logs)
+                                dronito.edge = False ## to remove
                                 if dronito.edge == True:
                                     edge_detection.find_platform_center(logs,dronito)
                             dronito.zigzag()

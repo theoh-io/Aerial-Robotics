@@ -28,17 +28,19 @@ URI = uri_helper.uri_from_env(default='radio://0/80/2M/E7E7E7E714')
 # Unit: meter
 DEFAULT_HEIGHT = 0.5 #1
 DEFAULT_VELOCITY = 0.2
+CLOSE_DIST = 0.2
+
 
 FOV_ZRANGER=math.radians(2.1)
-BOX_LIMIT_X = 3 #5 
-BOX_LIMIT_Y = 1 #3
+BOX_LIMIT_X = 2 #5 
+BOX_LIMIT_Y = 1.7 #3
 START_POS_X = 0
 START_POS_Y = 0
-GOAL_ZONE_X= 2
+GOAL_ZONE_X= 1
 START_EXPLORE_X = GOAL_ZONE_X-START_POS_X
-THRESH_Y = 0.3
+THRESH_Y = 1
 #variables needed for obstacle avoidance
-VELOCITY = 0.2
+VELOCITY = 0.5
 
 
 TIME_EXPLORE= 200
@@ -128,7 +130,7 @@ def zigzag_nonblocking():
 
     #print(state_zigzag['start'])
     if case==state_zigzag["start"]:
-        mc.start_back()
+        mc.start_forward()
         print('start')
         print(position_estimate[0])
     if (case==state_zigzag["start"] and position_estimate[0]>START_EXPLORE_X) or case == state_zigzag["back2left"]:
@@ -305,7 +307,7 @@ def regulate_yaw(mc, init_yaw, curr_yaw):
         print("zero error")
 
 def is_close(range):
-    MIN_DISTANCE = 0.4  # m
+    MIN_DISTANCE = 0.5  # m
 
     if range is None:
         return False
@@ -414,7 +416,7 @@ def  obstacle_avoid_left_right():
             velocity_front = VELOCITY
         else :
             velocity_front = - VELOCITY
-        if (position_estimate[0] < abs(pos_estimate_before_x + 0.03)):
+        if (position_estimate[0] < abs(pos_estimate_before_x + CLOSE_DIST)):
             print('fin state 3')
             if (is_close(multiranger.right)):
                 ('right close going left')
@@ -513,7 +515,7 @@ def  obstacle_avoid_front_back():
         else :
             velocity_left = - VELOCITY
         velocity_front = 0
-        if (position_estimate[1] < abs(pos_estimate_before_y + 0.03)):
+        if (position_estimate[1] < abs(pos_estimate_before_y + CLOSE_DIST)):
             print('fin state 3')
             if (is_close(multiranger.back)):
                 velocity_left = 0
@@ -804,6 +806,10 @@ if __name__ == '__main__':
 
                 while(1):
                     #print(obstacle_avoidance())
+                    if is_close(multiranger.up):
+                        mc.land()
+                        break
+
                     if (not(obstacle_avoidance())):
                     #if True:
                         #print('obs false')
