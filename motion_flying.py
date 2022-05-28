@@ -35,14 +35,9 @@ URI = uri_helper.uri_from_env(default='radio://0/80/2M/E7E7E7E714')
 DEFAULT_HEIGHT = 0.5 #1
 
 FOV_ZRANGER=math.radians(2.1)
-BOX_LIMIT_X = 1 #5
-BOX_LIMIT_Y = 2.5 #3
 
 START_POS_X = 0
 START_POS_Y = 0
-GOAL_ZONE_X= 1.5
-START_EXPLORE_X = GOAL_ZONE_X-START_POS_X
-THRESH_Y = 0.5
 #variables needed for obstacle avoidance
 VELOCITY = 0.2
 
@@ -236,7 +231,8 @@ if __name__ == '__main__':
 
                 while(1):
                     #print(obstacle_avoidance())
-                    if (obstacle_avoidance(multiranger.left, multiranger.right, multiranger.front, multiranger.back, dronito) == False):
+                    if True:
+                    #if (obstacle_avoidance(multiranger.left, multiranger.right, multiranger.front, multiranger.back, dronito) == False):
                         #if no obstacle is being detected let zigzag manage the speeds
                         if not dronito.is_arrived():
 

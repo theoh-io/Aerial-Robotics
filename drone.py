@@ -4,8 +4,8 @@ import time
 # Unit: meter
 DEFAULT_HEIGHT = 0.5 #1
 
-BOX_LIMIT_X = 1 #5
-BOX_LIMIT_Y = 2.5 #3
+BOX_LIMIT_X = 2 #5
+BOX_LIMIT_Y = 1.5 #3
 
 #START_POS_X = 0
 #START_POS_Y = 0
