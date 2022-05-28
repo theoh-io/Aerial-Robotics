@@ -84,6 +84,9 @@ class Drone():
         self.x_edge=0
         self.y_edge=0
 
+        #attributes obs avoidance
+        self.velocity_left = 0
+        self.velocity_front = 0
 
 
     def update_est(self, x, y, z, z_range, yaw):
@@ -204,6 +207,7 @@ class Drone():
 
     def zigzag_back(self):
         print("in zigzag back")
+        print(f"est x : {self.est_x}, dist exp :{self.dist_explore} ")
         if self.case2==self.state_zigzag["start"]:
             print('start_zz2')
             self.mc.start_back()
