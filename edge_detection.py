@@ -37,16 +37,16 @@ def is_edge(logs):
         print('Not enough data')
         return False, 0, 0
 
-def find_platform_center(logs):
+def find_platform_center(logs, dronito):
 
-    #x1=Drone.est_x
-    #y1=Drone.est_y
-    x1=Drone.x_edge
-    y1=Drone.y_edge
+    #x1=dronito.est_x
+    #y1=dronito.est_y
+    x1=dronito.x_edge
+    y1=dronito.y_edge
     
     """
-    x1_bis=Drone.est_x
-    y1_bis=Drone.est_y
+    x1_bis=dronito.est_x
+    y1_bis=dronito.est_y
 
     print(x1,' ',x1_bis)
     print(y1,' ',y1_bis)
@@ -59,60 +59,63 @@ def find_platform_center(logs):
     plt.savefig('first edge')
     """
 
-    if Drone.case == Drone.state_zigzag["right"]:
-        Drone.mc.right(0.40)
+    if dronito.case == dronito.state_zigzag["right"]:
+        dronito.mc.right(0.40)
         time.sleep(1)
 
-    if Drone.case == Drone.state_zigzag["left"]:
-        Drone.mc.left(0.40)
+    if dronito.case == dronito.state_zigzag["left"]:
+        dronito.mc.left(0.40)
         time.sleep(1)
 
     """
     while(edge == True):
         print('still close')
-        Drone.edge= is_edge_2()[0]
+        dronito.edge= is_edge_2()[0]
     """
     
     #logs = np.zeros([100000,4])
-    Drone.mc.back(0.4)
+    dronito.mc.back(0.4)
+
     time.sleep(1)
 
-    if Drone.case == Drone.state_zigzag["right"]:
-        Drone.mc.start_left()
+    if dronito.case == dronito.state_zigzag["right"]:
+        dronito.mc.start_left()
         print(y1)
-        print(Drone.est_y)
+        print(dronito.est_y)
 
-        while(Drone.est_y<(y1-0.25)):
+        while(dronito.est_y<(y1-0.25)):
             #pass
-            print('going left ',Drone.est_y,' ',y1)
+            print('going left ',dronito.est_y,' ',y1)
         
-        x2_before=Drone.est_x
-        y2_before=Drone.est_y
+        x2_before=dronito.est_x
+        y2_before=dronito.est_y
 
-    if Drone.case == Drone.state_zigzag["left"]:
-        Drone.mc.start_right()
+    if dronito.case == dronito.state_zigzag["left"]:
+        dronito.mc.start_right()
         print(y1)
-        print(Drone.est_y)
-        while(Drone.est_y>y1+0.25):
+        print(dronito.est_y)
+        while(dronito.est_y>y1+0.25):
             #pass
-            print('going right ',Drone.est_y,' ',y1)
-        x2_before=Drone.est_x
-        y2_before=Drone.est_y
+            print('going right ',dronito.est_y,' ',y1)
+        x2_before=dronito.est_x
+        y2_before=dronito.est_y
 
-    Drone.mc.start_forward()
+    dronito.mc.start_forward()
+
+
     print('going forward')
-    Drone.edge=False
+    dronito.edge=False
 
-    while(Drone.edge == False):
-        [Drone.edge,Drone.x_edge,Drone.y_edge]=is_edge()
-        if (Drone.edge==True):
+    while(dronito.edge == False):
+        [dronito.edge,dronito.x_edge,dronito.y_edge]=is_edge()
+        if (dronito.edge==True):
             """
             print('Edge 2 detected!')
-            x2_bis=Drone.est_x
-            y2_bis=Drone.est_y
+            x2_bis=dronito.est_x
+            y2_bis=dronito.est_y
             """
-            x2=Drone.x_edge
-            y2=Drone.y_edge
+            x2=dronito.x_edge
+            y2=dronito.y_edge
 
             """
             print('x1: ',x1,'x1_bis: ',x1_bis)
@@ -130,23 +133,26 @@ def find_platform_center(logs):
             plt.savefig('first edge & second edge')
             """
             
-        if Drone.est_x > Drone.boxborder_front - Drone.start_x:
+        if dronito.est_x > dronito.boxborder_front - dronito.start_x:
             print("No center found, limite arene x reached, let's land for safety")
-            Drone.mc.land()
-            Drone.case = Drone.state_zigzag["arrived"]
+            dronito.mc.land()
+            dronito.case = dronito.state_zigzag["arrived"]
             return
     
-    #before working Drone.mc.forward(0.05)
-    Drone.mc.forward(0.1, velocity=0.1)
+    #before working dronito.mc.forward(0.05)
+    dronito.mc.forward(0.1, velocity=0.1)
 
-    Drone.goal_x=Drone.est_x
-    Drone.goal_y=Drone.est_y
+   
+
+    dronito.goal_x=dronito.est_x
+    dronito.goal_y=dronito.est_y
 
     time.sleep(1)
-    #Drone.mc.down(0.35)
-    #Drone.mc.stop()
-    Drone.mc.land(velocity=0.1)
-    Drone.case = Drone.state_zigzag["arrived"]
+    #dronito.mc.down(0.35)
+    #dronito.mc.stop()
+    dronito.mc.land(velocity=0.1)
+    dronito.case = dronito.state_zigzag["arrived"]
+    dronito.edge=False
 
     dX=0.15
     dY=0
@@ -155,18 +161,155 @@ def find_platform_center(logs):
     print('x1: ',x1,'y1: ',y1)
     print('x2: ',x2,'y2: ',y2)
     print('x0: ',x0,'y0: ',y0)
-    print('goal_x: ',Drone.goal_x,'goal_y: ',Drone.goal_y)
+    print('goal_x: ',dronito.goal_x,'goal_y: ',dronito.goal_y)
 
     plt.figure()
     plt.axis('equal')
     plt.plot(logs[:,0]/1000,logs[:,1]/1000)
-    plt.scatter([x1,x2_before,x2,x0,Drone.goal_x],[y1,y2_before,y2,y0,Drone.goal_y])
+    plt.scatter([x1,x2_before,x2,x0,dronito.goal_x],[y1,y2_before,y2,y0,dronito.goal_y])
     plt.annotate('x1',(x1,y1))
     plt.annotate('x2_before',(x2_before,y2_before))
     plt.annotate('x2',(x2,y2))
     plt.annotate('x0',(x0,y0))
-    plt.annotate('goal',(Drone.goal_x,Drone.goal_y))
+    plt.annotate('goal',(dronito.goal_x,dronito.goal_y))
     rectangle = plt.Rectangle((x0-0.15,y0-0.15), 0.30, 0.30,fill=None)
     plt.gca().add_patch(rectangle)
     plt.savefig('platform center')
+
+def find_platform_center2(logs, dronito):
+
+    #x1=dronito.est_x
+    #y1=dronito.est_y
+    x1=dronito.x_edge
+    y1=dronito.y_edge
+    
+    """
+    x1_bis=dronito.est_x
+    y1_bis=dronito.est_y
+
+    print(x1,' ',x1_bis)
+    print(y1,' ',y1_bis)
+
+    plt.figure()
+    plt.axis('equal')
+    plt.scatter([x1,x1_bis],[y1,y1_bis])
+    plt.annotate('x1',(x1,y1))
+    plt.annotate('x1_bis',(x1_bis,y1_bis))
+    plt.savefig('first edge')
+    """
+
+    if dronito.case2 == dronito.state_zigzag["right"]:
+        dronito.mc.right(0.40)
+        time.sleep(1)
+
+    if dronito.case2 == dronito.state_zigzag["left"]:
+        dronito.mc.left(0.40)
+        time.sleep(1)
+
+    """
+    while(edge == True):
+        print('still close')
+        dronito.edge= is_edge_2()[0]
+    """
+    
+    #logs = np.zeros([100000,4])
+    dronito.mc.forward(0.4)
+    time.sleep(1)
+
+    if dronito.case2 == dronito.state_zigzag["right"]:
+        dronito.mc.start_left()
+        print(y1)
+        print(dronito.est_y)
+
+        while(dronito.est_y<(y1-0.25)):
+            #pass
+            print('going left ',dronito.est_y,' ',y1)
+        
+        x2_before=dronito.est_x
+        y2_before=dronito.est_y
+
+    if dronito.case2 == dronito.state_zigzag["left"]:
+        dronito.mc.start_right()
+        print(y1)
+        print(dronito.est_y)
+        while(dronito.est_y>y1+0.25):
+            #pass
+            print('going right ',dronito.est_y,' ',y1)
+        x2_before=dronito.est_x
+        y2_before=dronito.est_y
+
+    dronito.mc.start_back()
+
+    print('going forward')
+    dronito.edge=False
+
+    while(dronito.edge == False):
+        [dronito.edge,dronito.x_edge,dronito.y_edge]=is_edge()
+        if (dronito.edge==True):
+            """
+            print('Edge 2 detected!')
+            x2_bis=dronito.est_x
+            y2_bis=dronito.est_y
+            """
+            x2=dronito.x_edge
+            y2=dronito.y_edge
+
+            """
+            print('x1: ',x1,'x1_bis: ',x1_bis)
+            print('y1: ',y1,'y1_bis: ',y1_bis)
+            print('x2: ',x2,'x2_bis: ',x2_bis)
+            print('y2: ',y2,'y2_bis: ',y2_bis)
+
+            plt.figure()
+            plt.axis('equal')
+            plt.scatter([x1,x1_bis,x2,x2_bis],[y1,y1_bis,y2,y2_bis])
+            plt.annotate('x1',(x1,y1))
+            plt.annotate('x1_bis',(x1_bis,y1_bis))
+            plt.annotate('x2',(x2,y2))
+            plt.annotate('x2_bis',(x2_bis,y2_bis))
+            plt.savefig('first edge & second edge')
+            """
+            
+        if dronito.est_x > dronito.boxborder_front - dronito.start_x:
+            print("No center found, limite arene x reached, let's land for safety")
+            dronito.mc.land()
+            dronito.case2 = dronito.state_zigzag["arrived"]
+            return
+    
+    #before working dronito.mc.forward(0.05)
+    dronito.mc.back(0.1, velocity=0.1)
+   
+    dronito.goal_x=dronito.est_x
+    dronito.goal_y=dronito.est_y
+
+    time.sleep(1)
+    #dronito.mc.down(0.35)
+    #dronito.mc.stop()
+    dronito.mc.land(velocity=0.1)
+    dronito.case2 = dronito.state_zigzag["arrived"]
+    dronito.edge=False
+
+    dX=0.15
+    dY=0
+    x0=x2+dX
+    y0=y2+dY
+    print('x1: ',x1,'y1: ',y1)
+    print('x2: ',x2,'y2: ',y2)
+    print('x0: ',x0,'y0: ',y0)
+    print('goal_x: ',dronito.goal_x,'goal_y: ',dronito.goal_y)
+
+    plt.figure()
+    plt.axis('equal')
+    plt.plot(logs[:,0]/1000,logs[:,1]/1000)
+    plt.scatter([x1,x2_before,x2,x0,dronito.goal_x],[y1,y2_before,y2,y0,dronito.goal_y])
+    plt.annotate('x1',(x1,y1))
+    plt.annotate('x2_before',(x2_before,y2_before))
+    plt.annotate('x2',(x2,y2))
+    plt.annotate('x0',(x0,y0))
+    plt.annotate('goal',(dronito.goal_x,dronito.goal_y))
+    rectangle = plt.Rectangle((x0-0.15,y0-0.15), 0.30, 0.30,fill=None)
+    plt.gca().add_patch(rectangle)
+    plt.savefig('platform center')
+
+
 

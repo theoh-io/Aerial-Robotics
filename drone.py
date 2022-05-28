@@ -186,6 +186,11 @@ class Drone():
         if self.case == self.state_zigzag['start']:
             return True
         return False
+    
+    def is_starting2(self):
+        if self.case2 == self.state_zigzag['start']:
+            return True
+        return False
 
     def zigzag_back(self):
         print("in zigzag back")
@@ -224,23 +229,6 @@ class Drone():
         if(time.time()-self.start_time2>TIME_EXPLORE2):
             print("arret au retour basé sur le timing")
             self.goal_reached2()
-            
-
-        #FIXME need to be implemented outside of drone class
-        if (self.edge == True and (self.case != self.state_zigzag["start"]) and (self.case != self.state_zigzag["arrived"]) ):
-            print('Edge far detected!')
-            #yaw_landing=position_estimate[2]
-            #must record goal pos before landing because variation can occur
-            #goal_x=self.est_x
-            #goal_y=self.est_y
-            self.edge=1
-            #find_platform_center()
-            self.mc.land()
-            #time.sleep(1)
-            #self.mc.take_off(DEFAULT_HEIGHT)
-            #clean_takeoff(self.mc, [goal_x, goal_y, yaw_landing])
-            #self.case =state_zigzag["arrived"] #to get out of zigzag
-
 
     def zigzag_box(self):
         '''

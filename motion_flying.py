@@ -22,7 +22,7 @@ from cflib.utils import uri_helper
 from cflib.utils.multiranger import Multiranger  
 from cflib.crazyflie.syncLogger import SyncLogger
 from cflib.positioning.position_hl_commander import PositionHlCommander
-from obs_avoid import obstacle_avoidance
+from obs_avoid import *
 
 from drone import Drone
 
@@ -202,16 +202,15 @@ if __name__ == '__main__':
         logconf.data_received_cb.add_callback(log_pos_callback)
         logconf.data_received_cb.add_callback(stab_log_data)
 
-        #start logging
-        logconf.start()
-
         with MotionCommander(scf, default_height=DEFAULT_HEIGHT) as mc:
             with Multiranger(scf) as multiranger:
+                #start logging
+                logconf.start()
+                
                 dronito.mc=mc
-                #dronito=Drone(mc, start_x=START_POS_X, start_y=START_POS_Y, x_offset=0.25)
+
                 #little sleep needed for takeoff
                 time.sleep(1)
-                
                 
                 #variables needed for global nav
                 #len_x, len_y = (BOX_LIMIT_X, BOX_LIMIT_Y)
@@ -247,12 +246,18 @@ if __name__ == '__main__':
                             
                             if not dronito.is_starting():
                                 [dronito.edge,dronito.x_edge,dronito.y_edge] = edge_detection.is_edge(logs)
+                                dronito.edge = False ## to remove
                                 if dronito.edge == True:
-                                    edge_detection.find_platform_center(logs)
+                                    edge_detection.find_platform_center(logs,dronito)
                             dronito.zigzag()
                         else:
                             print("here!!!")
+                            break
                             if not dronito.is_arrived2():
+                                if not dronito.is_starting2():
+                                    [dronito.edge,dronito.x_edge,dronito.y_edge] = edge_detection.is_edge(logs)
+                                    if dronito.edge == True:
+                                        edge_detection.find_platform_center2(logs,dronito)
                                 dronito.zigzag_back()
                             else:
                                 break
