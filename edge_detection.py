@@ -135,8 +135,12 @@ def find_platform_center(logs, dronito):
             
         if dronito.est_x > dronito.boxborder_front - dronito.start_x:
             print("No center found, limite arene x reached, let's land for safety")
-            dronito.mc.land()
-            dronito.case = dronito.state_zigzag["arrived"]
+            dronito.goal_x=dronito.est_x
+            dronito.goal_y=dronito.est_y
+            dronito.yaw_landing=dronito.est_yaw
+            if dronito.verbose is True:
+                print("yaw before landing", dronito.yaw_landing)
+            dronito.edge=False
             return
     
     #before working dronito.mc.forward(0.05)
@@ -150,10 +154,6 @@ def find_platform_center(logs, dronito):
     if dronito.verbose is True:
         print("yaw before landing", dronito.yaw_landing)
     
-    #dronito.mc.down(0.35)
-    #dronito.mc.stop()
-    dronito.mc.land(velocity=0.1)
-    dronito.case = dronito.state_zigzag["arrived"]
     dronito.edge=False
 
     dX=0.15
@@ -274,21 +274,25 @@ def find_platform_center2(logs, dronito):
             
         if dronito.est_x > dronito.boxborder_front - dronito.start_x:
             print("No center found, limite arene x reached, let's land for safety")
-            dronito.mc.land()
-            dronito.case2 = dronito.state_zigzag["arrived"]
+            dronito.goal_x=dronito.est_x
+            dronito.goal_y=dronito.est_y
+            dronito.yaw_landing=dronito.est_yaw
+            if dronito.verbose is True:
+                print("yaw before landing", dronito.yaw_landing)
+            dronito.edge=False
             return
     
     #before working dronito.mc.forward(0.05)
     dronito.mc.back(0.1, velocity=0.1)
    
+    time.sleep(1)
+
     dronito.goal_x=dronito.est_x
     dronito.goal_y=dronito.est_y
-
-    time.sleep(1)
-    #dronito.mc.down(0.35)
-    #dronito.mc.stop()
-    dronito.mc.land(velocity=0.1)
-    dronito.case2 = dronito.state_zigzag["arrived"]
+    dronito.yaw_landing=dronito.est_yaw
+    if dronito.verbose is True:
+        print("yaw before landing", dronito.yaw_landing)
+    
     dronito.edge=False
 
     dX=0.15

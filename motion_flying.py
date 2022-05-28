@@ -248,20 +248,21 @@ if __name__ == '__main__':
                                 #dronito.edge = False ## to remove
                                 if dronito.edge == True:
                                     edge_detection.find_platform_center(logs,dronito)
-                                    dronito.landed=1
-                                    time.sleep(1)
-                                    dronito.mc.take_off(DEFAULT_HEIGHT)
-                                    dronito.clean_takeoff2()
+                                    dronito.goal_reached()
                             dronito.zigzag()
                         else:
                             # print("here!!!")
                             #break
                             if not dronito.is_arrived2():
                                 dronito.zigzag_back()
+                                
                                 if not dronito.is_starting2():
                                     [dronito.edge,dronito.x_edge,dronito.y_edge] = edge_detection.is_edge(logs)
                                     if dronito.edge == True:
                                         edge_detection.find_platform_center2(logs,dronito)
+                                        dronito.goal_reached2()
+                            else:
+                                break
  
                         time.sleep(freq_main)
                     else:

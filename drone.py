@@ -4,19 +4,21 @@ import time
 # Unit: meter
 DEFAULT_HEIGHT = 0.5 #1
 
-BOX_LIMIT_X = 1.5 #5
+BOX_LIMIT_X = 2 #5
 BOX_LIMIT_Y = 1.2 #3
 
 #START_POS_X = 0
 #START_POS_Y = 0
 GOAL_ZONE_X= 1
-START_ZONE_X=0.5
+START_ZONE_X=1
 TIME_EXPLORE=400
 TIME_EXPLORE2=400
 TIME_EXPLOREBOX=10
 #variables needed for obstacle avoidance
 VELOCITY = 0.2
 EPSYLON=0.0001
+
+VELOCITY_LANDING=0.1
 
 class Drone():
     def __init__(self, mc, start_x, start_y, x_offset=0.25, verbose=True):
@@ -150,15 +152,20 @@ class Drone():
 
         #Temporaire: condition d'arret si la limite de l'arene en x 
         if self.est_x > self.boxborder_front:
-            print("limite box atteinte en x")
-            self.mc.land()
+            print("Pas de plateforme, limite box atteinte en x")
             time.sleep(1)
+            self.goal_x=self.est_x
+            self.goal_y=self.est_y
+            self.yaw_landing=self.est_yaw
+            if self.verbose is True:
+                print("yaw before landing", self.yaw_landing)
             self.case =self.state_zigzag["arrived"]
+            self.goal_reached()
         
         #Temporaire condition de retour basé sur le temps de vol
-        if(time.time()-self.start_time>TIME_EXPLORE):
-            print("stop due au timing")
-            self.goal_reached()
+        #if(time.time()-self.start_time>TIME_EXPLORE):
+        #    print("stop due au timing")
+        #    self.goal_reached()
             # print(" Exploration time exceeded")
             # self.yaw_landing=self.est_yaw
             # print("yaw during landing", self.yaw_landing)
@@ -222,13 +229,20 @@ class Drone():
 
         #Temporaire: condition d'arret si la limite de l'arene en x 
         if self.est_x < 0:
-            print("limite de la box atteinte au retour")
+            print("Pas de platforme, limite de la box atteinte au retour")
+            time.sleep(1)
+            self.goal_x=self.est_x
+            self.goal_y=self.est_y
+            self.yaw_landing=self.est_yaw
+            if self.verbose is True:
+                print("yaw before landing", self.yaw_landing)
+            self.case =self.state_zigzag["arrived"]
             self.goal_reached2()
         
         #Temporaire condition de retour basé sur le temps de vol
-        if(time.time()-self.start_time2>TIME_EXPLORE2):
-            print("arret au retour basé sur le timing")
-            self.goal_reached2()
+        #if(time.time()-self.start_time2>TIME_EXPLORE2):
+        #    print("arret au retour basé sur le timing")
+        #    self.goal_reached2()
 
     def zigzag_box(self):
         '''
@@ -263,11 +277,25 @@ class Drone():
 
         #Temporaire: condition d'arret si la limite de la box en x 
         if self.est_x < self.pos_x-self.zone_x:
-            print("Exploration box terminée sans succès")
+            print("Pas de platforme, exploration box terminée sans succès")
+            time.sleep(1)
+            self.goal_x=self.est_x
+            self.goal_y=self.est_y
+            self.yaw_landing=self.est_yaw
+            if self.verbose is True:
+                print("yaw before landing", self.yaw_landing)
+            self.case =self.state_zigzag["arrived"]
             self.goal_reached2()
         
         #Temporaire condition de retour basé sur le temps de vol
         if(time.time()-self.start_time2>TIME_EXPLOREBOX):
+            time.sleep(1)
+            self.goal_x=self.est_x
+            self.goal_y=self.est_y
+            self.yaw_landing=self.est_yaw
+            if self.verbose is True:
+                print("yaw before landing", self.yaw_landing)
+            self.case =self.state_zigzag["arrived"]
             self.goal_reached2()
             
 
@@ -397,37 +425,23 @@ class Drone():
 
     def goal_reached(self):
         #when goal reached needs to: 
-        #record goal position before landing
         #land
         #take off
         #update flag for using 2 estimation function
         #switch state_zigzag
 
-        self.yaw_landing=self.est_yaw
-        if self.verbose is True:print("yaw before landing", self.yaw_landing)
-        self.goal_x=self.est_x
-        self.goal_y=self.est_y
-        self.mc.land()
+        self.mc.land(velocity=VELOCITY_LANDING)
+        self.case = self.state_zigzag["arrived"]
         self.landed=1 #used to decide which position estimation function to use
-        time.sleep(1)
+        time.sleep(5)
         self.mc.take_off(DEFAULT_HEIGHT)
         self.clean_takeoff2()
-        #clean_takeoff(self.mc, [goal_x, goal_y, yaw_landing])
-        self.case =self.state_zigzag["arrived"] #to get out of zigzag
-        self.start_time2=time.time()
         
-
     def goal_reached2(self):
-            #when goal reached needs to: 
-            #record goal position before landing
-            #land
-            #take off
-            #update flag for using 2 estimation function
-            #switch state_zigzag
-
-            print("final goal reached")
-            self.mc.land()
-            self.case2 =self.state_zigzag["arrived"] #to get out of zigzag
+        print("final goal reached")
+        self.mc.land(velocity=VELOCITY_LANDING)
+        self.case2 = self.state_zigzag["arrived"]
+        self.landed=1 #used to decide which position estimation function to use
         
         
 
