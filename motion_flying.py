@@ -35,20 +35,20 @@ URI = uri_helper.uri_from_env(default='radio://0/80/2M/E7E7E7E714')
 DEFAULT_HEIGHT = 0.5 #1
 
 FOV_ZRANGER=math.radians(2.1)
-BOX_LIMIT_X = 2.5 #5
-BOX_LIMIT_Y = 0.1 #3
+BOX_LIMIT_X = 1.5 #5
+BOX_LIMIT_Y = 0.2 #3
 
 START_POS_X = 0
 START_POS_Y = 0
-GOAL_ZONE_X= 1.5
+GOAL_ZONE_X= 0.5
 START_EXPLORE_X = GOAL_ZONE_X-START_POS_X
 THRESH_Y = 0.5
 #variables needed for obstacle avoidance
 VELOCITY = 0.2
 
 
-TIME_EXPLORE= 15
-TIME_EXPLORE= 15
+TIME_EXPLORE= 12
+TIME_EXPLORE= 7
 
 RESOLUTION_GRID=0.20 # m
 MIN_DISTANCE_OCCUP_GRIG = 3  # m
@@ -181,6 +181,7 @@ if __name__ == '__main__':
 
     cflib.crtp.init_drivers()
     with SyncCrazyflie(URI, cf=Crazyflie(rw_cache='./cache')) as scf:
+        dronito=Drone(None, start_x=START_POS_X, start_y=START_POS_Y, x_offset=0.25)
 
         # scf.cf.param.set_value('kalman.resetEstimation', '1')
         # time.sleep(0.1)
@@ -210,7 +211,8 @@ if __name__ == '__main__':
 
         with MotionCommander(scf, default_height=DEFAULT_HEIGHT) as mc:
             with Multiranger(scf) as multiranger:
-                dronito=Drone(mc, start_x=START_POS_X, start_y=START_POS_Y, x_offset=0.25)
+                dronito.mc=mc
+                #dronito=Drone(mc, start_x=START_POS_X, start_y=START_POS_Y, x_offset=0.25)
                 #little sleep needed for takeoff
                 time.sleep(1)
                 
@@ -236,7 +238,7 @@ if __name__ == '__main__':
 
                 while(1):
                     #print(obstacle_avoidance())
-                    if (obstacle_avoidance(multiranger.left, multiranger.right, multiranger.front, multiranger.back) == False):
+                    if True:#(obstacle_avoidance(multiranger.left, multiranger.right, multiranger.front, multiranger.back) == False):
                         #if no obstacle is being detected let zigzag manage the speeds
                         if not dronito.is_arrived():
 
