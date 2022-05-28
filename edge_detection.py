@@ -107,7 +107,7 @@ def find_platform_center(logs, dronito):
     dronito.edge=False
 
     while(dronito.edge == False):
-        [dronito.edge,dronito.x_edge,dronito.y_edge]=is_edge()
+        [dronito.edge,dronito.x_edge,dronito.y_edge]=is_edge(logs)
         if (dronito.edge==True):
             """
             print('Edge 2 detected!')
@@ -142,12 +142,14 @@ def find_platform_center(logs, dronito):
     #before working dronito.mc.forward(0.05)
     dronito.mc.forward(0.1, velocity=0.1)
 
-   
+    time.sleep(1)
 
     dronito.goal_x=dronito.est_x
     dronito.goal_y=dronito.est_y
-
-    time.sleep(1)
+    dronito.yaw_landing=dronito.est_yaw
+    if dronito.verbose is True:
+        print("yaw before landing", dronito.yaw_landing)
+    
     #dronito.mc.down(0.35)
     #dronito.mc.stop()
     dronito.mc.land(velocity=0.1)
@@ -244,7 +246,7 @@ def find_platform_center2(logs, dronito):
     dronito.edge=False
 
     while(dronito.edge == False):
-        [dronito.edge,dronito.x_edge,dronito.y_edge]=is_edge()
+        [dronito.edge,dronito.x_edge,dronito.y_edge]=is_edge(logs)
         if (dronito.edge==True):
             """
             print('Edge 2 detected!')
