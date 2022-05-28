@@ -4,16 +4,16 @@ import time
 # Unit: meter
 DEFAULT_HEIGHT = 0.5 #1
 
-BOX_LIMIT_X = 3 #5
-BOX_LIMIT_Y = 0.5 #3
+BOX_LIMIT_X = 1.5 #5
+BOX_LIMIT_Y = 0.2 #3
 
 #START_POS_X = 0
 #START_POS_Y = 0
-GOAL_ZONE_X= 1.2
-START_ZONE_X=0.2
-TIME_EXPLORE=20
+GOAL_ZONE_X= 1
+START_ZONE_X=0.5
+TIME_EXPLORE=15
 TIME_EXPLORE2=20
-TIME_EXPLOREBOX=15 
+TIME_EXPLOREBOX=10
 #variables needed for obstacle avoidance
 VELOCITY = 0.2
 EPSYLON=0.0001
@@ -37,19 +37,19 @@ class Drone():
         self.goal_y=0
         #Box dimensions attributes
         # self.global_frame=False
-        # self.boxborder_left=BOX_LIMIT_Y
-        # self.boxborder_right=0
-        # self.boxborder_front=BOX_LIMIT_X
-        # self.boxborder_back=0
-        # self.dist_explore=GOAL_ZONE_X
-        # self.dist_explore2=START_ZONE_X
-
-        self.boxborder_left=BOX_LIMIT_Y-start_y
-        self.boxborder_right=-start_y
-        self.boxborder_front=BOX_LIMIT_X-start_x
-        self.boxborder_back=-start_x
-        self.dist_explore=GOAL_ZONE_X-start_x
-        self.dist_explore2=START_ZONE_X-start_x
+        self.boxborder_left=BOX_LIMIT_Y
+        self.boxborder_right=0
+        self.boxborder_front=BOX_LIMIT_X
+        self.boxborder_back=0
+        self.dist_explore=GOAL_ZONE_X
+        self.dist_explore2=START_ZONE_X
+        #Arena local frame
+        # self.boxborder_left=BOX_LIMIT_Y-start_y
+        # self.boxborder_right=-start_y
+        # self.boxborder_front=BOX_LIMIT_X-start_x
+        # self.boxborder_back=-start_x
+        # self.dist_explore=GOAL_ZONE_X-start_x
+        # self.dist_explore2=START_ZONE_X-start_x
         #zigzag attributes
         self.state_zigzag={'start':-1, 'left':0, 'forward1':1, 'right':2, 'forward2':3, 'back2left':4, 'arrived':5}
         self.case=self.state_zigzag["start"]
@@ -150,13 +150,14 @@ class Drone():
 
         #Temporaire: condition d'arret si la limite de l'arene en x 
         if self.est_x > self.boxborder_front:
-            print("Seulement un edge détecté, pas le deuxième, limite arene x reached, let's land for safety")
+            print("limite box atteinte en x")
             self.mc.land()
             time.sleep(1)
             self.case =self.state_zigzag["arrived"]
         
         #Temporaire condition de retour basé sur le temps de vol
         if(time.time()-self.start_time>TIME_EXPLORE):
+            print("stop due au timing")
             self.goal_reached()
             # print(" Exploration time exceeded")
             # self.yaw_landing=self.est_yaw
@@ -215,14 +216,13 @@ class Drone():
             print('back2left')
 
         #Temporaire: condition d'arret si la limite de l'arene en x 
-        if self.est_x > self.boxborder_front:
-            print("Seulement un edge détecté, pas le deuxième, limite arene x reached, let's land for safety")
-            self.mc.land()
-            time.sleep(1)
-            self.case =self.state_zigzag["arrived"]
+        if self.est_x < 0:
+            print("limite de la box atteinte au retour")
+            self.goal_reached2()
         
         #Temporaire condition de retour basé sur le temps de vol
         if(time.time()-self.start_time2>TIME_EXPLORE2):
+            print("arret au retour basé sur le timing")
             self.goal_reached2()
             
 

@@ -35,20 +35,16 @@ URI = uri_helper.uri_from_env(default='radio://0/80/2M/E7E7E7E714')
 DEFAULT_HEIGHT = 0.5 #1
 
 FOV_ZRANGER=math.radians(2.1)
-BOX_LIMIT_X = 1.5 #5
-BOX_LIMIT_Y = 0.2 #3
 
-START_POS_X = 0
-START_POS_Y = 0
+
+START_POS_X = 1.2
+START_POS_Y = 0.18
 GOAL_ZONE_X= 0.5
 START_EXPLORE_X = GOAL_ZONE_X-START_POS_X
 THRESH_Y = 0.5
 #variables needed for obstacle avoidance
 VELOCITY = 0.2
 
-
-TIME_EXPLORE= 12
-TIME_EXPLORE= 7
 
 RESOLUTION_GRID=0.20 # m
 MIN_DISTANCE_OCCUP_GRIG = 3  # m
@@ -100,7 +96,7 @@ def log_pos_callback(timestamp, data, logconf):
         yaw = data['stateEstimate.yaw']
         #add a flag to update using est2 on the way back
         
-        dronito.update_est(x, y, z, zrange, yaw)
+        dronito.update_est_global(x, y, z, zrange, yaw)
         if dronito.landed ==1:
             #print("successfully found flag")
             dronito.update_est2(x, y, z, zrange, yaw)
@@ -218,7 +214,7 @@ if __name__ == '__main__':
                 
                 
                 #variables needed for global nav
-                len_x, len_y = (BOX_LIMIT_X, BOX_LIMIT_Y)
+                #len_x, len_y = (BOX_LIMIT_X, BOX_LIMIT_Y)
                 # occupancy_grid = np.zeros((len_x,len_y))
                 # explored_list = []
                 
