@@ -131,41 +131,41 @@ def store_log_data():
 
 # -------------------------------------------------------------------------------------------------------------
 
-def posestimation_to_grid(position_estimate_x,position_estimate_y):
-    return (int((position_estimate_x)/RESOLUTION_GRID), int((position_estimate_y)/RESOLUTION_GRID))
-    #return (int((position_estimate_x+START_POS_X)/RESOLUTION_GRID), int((position_estimate_y+START_POS_Y)/RESOLUTION_GRID))
+# def posestimation_to_grid(position_estimate_x,position_estimate_y):
+#     return (int((position_estimate_x)/RESOLUTION_GRID), int((position_estimate_y)/RESOLUTION_GRID))
+#     #return (int((position_estimate_x+START_POS_X)/RESOLUTION_GRID), int((position_estimate_y+START_POS_Y)/RESOLUTION_GRID))
 
-def obstacle_mapping(range_left, range_right, range_front, range_back, occupancy_grid, pos_x, pos_y):
+# def obstacle_mapping(range_left, range_right, range_front, range_back, occupancy_grid, pos_x, pos_y):
 
-    if(range_front < MIN_DISTANCE_OCCUP_GRIG):
-        pos_obsf=(pos_x+range_front)
-        if(pos_obsf>BOX_LIMIT_X-START_POS_X):
-            print("Obstacle mapped at front")
-            idx_x,idx_y = posestimation_to_grid(pos_obsf,pos_y)
-            occupancy_grid[idx_x,idx_y]=1
+#     if(range_front < MIN_DISTANCE_OCCUP_GRIG):
+#         pos_obsf=(pos_x+range_front)
+#         if(pos_obsf>BOX_LIMIT_X-START_POS_X):
+#             print("Obstacle mapped at front")
+#             idx_x,idx_y = posestimation_to_grid(pos_obsf,pos_y)
+#             occupancy_grid[idx_x,idx_y]=1
         
-    if(range_back < MIN_DISTANCE_OCCUP_GRIG):
-        pos_obsb=(pos_x-range_back)
-        if(pos_obsb<-START_POS_X):
-            print("Obstacle mapped at back")
-            idx_x,idx_y = posestimation_to_grid(pos_obsb,pos_y)
-            occupancy_grid[idx_x,idx_y]=1
+#     if(range_back < MIN_DISTANCE_OCCUP_GRIG):
+#         pos_obsb=(pos_x-range_back)
+#         if(pos_obsb<-START_POS_X):
+#             print("Obstacle mapped at back")
+#             idx_x,idx_y = posestimation_to_grid(pos_obsb,pos_y)
+#             occupancy_grid[idx_x,idx_y]=1
 
-    if(range_left < MIN_DISTANCE_OCCUP_GRIG):
-        pos_obsl=pos_y+range_left
-        if(pos_obsl>BOX_LIMIT_Y-START_POS_Y):
-            print("Obstacle mapped at left")
-            idx_x,idx_y = posestimation_to_grid(pos_x,pos_obsl)
-            occupancy_grid[idx_x,idx_y]=1
+#     if(range_left < MIN_DISTANCE_OCCUP_GRIG):
+#         pos_obsl=pos_y+range_left
+#         if(pos_obsl>BOX_LIMIT_Y-START_POS_Y):
+#             print("Obstacle mapped at left")
+#             idx_x,idx_y = posestimation_to_grid(pos_x,pos_obsl)
+#             occupancy_grid[idx_x,idx_y]=1
 
-    if(range_right < MIN_DISTANCE_OCCUP_GRIG):
-        pos_obsr=pos_y-range_right
-        if(pos_obsr<-START_POS_Y):
-            print("Obstacle mapped at right")
-            idx_x, idx_y = posestimation_to_grid(pos_x,pos_obsr)
-            occupancy_grid[idx_x,idx_y]=1
+#     if(range_right < MIN_DISTANCE_OCCUP_GRIG):
+#         pos_obsr=pos_y-range_right
+#         if(pos_obsr<-START_POS_Y):
+#             print("Obstacle mapped at right")
+#             idx_x, idx_y = posestimation_to_grid(pos_x,pos_obsr)
+#             occupancy_grid[idx_x,idx_y]=1
             
-    return occupancy_grid
+#     return occupancy_grid
 
 # -------------------------------------------------------------------------------------------------------------
 
@@ -215,10 +215,6 @@ if __name__ == '__main__':
                 #len_x, len_y = (BOX_LIMIT_X, BOX_LIMIT_Y)
                 # occupancy_grid = np.zeros((len_x,len_y))
                 # explored_list = []
-                
-                #variables needed for obstacle avoidance
-                velocity_left = 0
-                velocity_front = 0
 
                 
                 #temporary intentional disturbance to regulate yaw
@@ -231,8 +227,11 @@ if __name__ == '__main__':
 
 
                 while(1):
+                    if is_close(multiranger.up):
+                        mc.land()
+                        break
                     #print(obstacle_avoidance())
-                    if (obstacle_avoidance(multiranger.left, multiranger.right, multiranger.front, multiranger.back) == False):
+                    if (obstacle_avoidance(multiranger.left, multiranger.right, multiranger.front, multiranger.back, dronito) == False):
                         #if no obstacle is being detected let zigzag manage the speeds
                         if not dronito.is_arrived():
 
@@ -267,8 +266,9 @@ if __name__ == '__main__':
                     else:
                         print("obstacle av = True")
                         #obstacle detected then gives manually the speeds defined by obstacle avoidance
-                        mc.start_linear_motion(velocity_left, velocity_front, 0)
-                        time.sleep(0.1)
+                        print(dronito.velocity_front, dronito.velocity_left)
+                        mc.start_linear_motion(dronito.velocity_front, dronito.velocity_left, 0)
+                        time.sleep(freq_main)
         #stop logging
         print("in logcong")
         logconf.stop()
