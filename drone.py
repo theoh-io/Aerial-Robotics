@@ -185,6 +185,11 @@ class Drone():
         if self.case == self.state_zigzag['start']:
             return True
         return False
+    
+    def is_starting2(self):
+        if self.case2 == self.state_zigzag['start']:
+            return True
+        return False
 
     def zigzag_back(self):
         print("in zigzag back")

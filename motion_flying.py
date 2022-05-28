@@ -255,6 +255,10 @@ if __name__ == '__main__':
                         else:
                             print("here!!!")
                             if not dronito.is_arrived2():
+                                if not dronito.is_starting2():
+                                    [dronito.edge,dronito.x_edge,dronito.y_edge] = edge_detection.is_edge(logs)
+                                    if dronito.edge == True:
+                                        edge_detection.find_platform_center2(logs,dronito)
                                 dronito.zigzag_back()
                             else:
                                 break
