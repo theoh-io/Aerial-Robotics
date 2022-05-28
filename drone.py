@@ -4,14 +4,14 @@ import time
 # Unit: meter
 DEFAULT_HEIGHT = 0.5 #1
 
-BOX_LIMIT_X = 1.5 #5
-BOX_LIMIT_Y = 0.8 #3
+BOX_LIMIT_X = 2.2 #5
+BOX_LIMIT_Y = 1.2 #3
 
 #START_POS_X = 0
 #START_POS_Y = 0
 GOAL_ZONE_X= 1
 START_ZONE_X=0.5
-TIME_EXPLORE=18
+TIME_EXPLORE=25
 TIME_EXPLORE2=20
 TIME_EXPLOREBOX=10
 #variables needed for obstacle avoidance

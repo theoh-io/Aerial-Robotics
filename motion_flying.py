@@ -232,7 +232,7 @@ if __name__ == '__main__':
 
                 while(1):
                     #print(obstacle_avoidance())
-                    if True:#(obstacle_avoidance(multiranger.left, multiranger.right, multiranger.front, multiranger.back) == False):
+                    if (obstacle_avoidance(multiranger.left, multiranger.right, multiranger.front, multiranger.back) == False):
                         #if no obstacle is being detected let zigzag manage the speeds
                         if not dronito.is_arrived():
 
