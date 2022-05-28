@@ -1,5 +1,3 @@
-from cflib.utils.multiranger import Multiranger
-from drone import Drone 
 
 
 # const
@@ -8,6 +6,8 @@ THRESH_Y = 0.2
 LOW_VELOCITY = 0.05
 BOX_LIMIT_X = 3 #5
 BOX_LIMIT_Y = 1 #3
+
+
 
 #variables
 pos_estimate_before_x = 0
@@ -40,9 +40,8 @@ def is_close(range):
 
 def  obstacle_avoid_left_right(multiranger_left, multiranger_right, multiranger_front, multiranger_back, dronito):
     global velocity_front, velocity_left, pos_estimate_before_x, state, first_detection, no_detection, from_left, from_right, pos_estimate_before_y, obstacle_at_front, obstacle_at_back
-    global case
     
-    if (is_close(multiranger_left) and (not (from_right)) and case==dronito.state_zigzag['left'] ):
+    if (is_close(multiranger_left) and (not (from_right)) and dronito.case==dronito.state_zigzag['left'] ):
         print('state =1 left') 
         print(multiranger_left)
         print(is_close(multiranger_left))
@@ -54,7 +53,7 @@ def  obstacle_avoid_left_right(multiranger_left, multiranger_right, multiranger_
         
         if (abs(pos_estimate_before_y - (BOX_LIMIT_Y)) < THRESH_Y): #obstacle very close to y border prendre en cond min dist
             print("too close to border")
-            case=dronito.state_zigzag["forward1"]
+            dronito.case=dronito.state_zigzag["forward1"]
             from_left = 0
             return False
         
@@ -68,7 +67,7 @@ def  obstacle_avoid_left_right(multiranger_left, multiranger_right, multiranger_
         state = 2
         return True
 
-    if (is_close(multiranger_right)  and (not (from_left)) and case==dronito.state_zigzag['right']):
+    if (is_close(multiranger_right)  and (not (from_left)) and dronito.case==dronito.state_zigzag['right']):
         print('state =1 right') 
         print(multiranger_left)
         print(is_close(multiranger_left))
@@ -80,7 +79,7 @@ def  obstacle_avoid_left_right(multiranger_left, multiranger_right, multiranger_
         
         if (abs(pos_estimate_before_y) < THRESH_Y): #obstacle very close to y border
             print("too close to border")
-            case=dronito.state_zigzag["forward2"]
+            dronito.case=dronito.state_zigzag["forward2"]
             from_right = 0
             return False  
         
@@ -170,7 +169,8 @@ def  obstacle_avoid_left_right(multiranger_left, multiranger_right, multiranger_
 def  obstacle_avoid_front_back(multiranger_left, multiranger_right, multiranger_front, multiranger_back, dronito):
     global velocity_front, velocity_left, pos_estimate_before_y, state, first_detection, no_detection, from_front, from_back, obstacle_at_left, obstacle_at_right
 
-    if (is_close(multiranger_front) and (not from_back) and (case==dronito.state_zigzag['forward1'] or case==dronito.state_zigzag['start'] or case==dronito.state_zigzag['forward2'] )): 
+
+    if (is_close(multiranger_front) and (not from_back) and (dronito.case==dronito.state_zigzag['forward1'] or dronito.case==dronito.state_zigzag['start'] or dronito.case==dronito.state_zigzag['forward2'] )): 
         print('state =1 front')
         from_front = 1
         if (state==1) :
@@ -185,10 +185,10 @@ def  obstacle_avoid_front_back(multiranger_left, multiranger_right, multiranger_
         state = 2
         return True
 
-    if (is_close(multiranger_back) and (not from_front) and (case==dronito.state_zigzag['arrived'])): #jamais pour le moment juste arrived
+    if (is_close(multiranger_back) and (not from_front) and (dronito.case==dronito.state_zigzag['arrived'])): #jamais pour le moment juste arrived
         print('state =1 back')
         from_back = 1
-        print(case)
+        print(dronito.case)
         if (state==1) :
             pos_estimate_before_y = dronito.est_y #y pos left/right
             if (abs(pos_estimate_before_y) > abs(pos_estimate_before_y - BOX_LIMIT_Y)): # if distance plus grande a droite ? 
