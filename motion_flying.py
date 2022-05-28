@@ -37,10 +37,9 @@ DEFAULT_HEIGHT = 0.5 #1
 FOV_ZRANGER=math.radians(2.1)
 
 
-START_POS_X = 1.2
-START_POS_Y = 0.18
-GOAL_ZONE_X= 0.5
-START_EXPLORE_X = GOAL_ZONE_X-START_POS_X
+START_POS_X = 0
+START_POS_Y = 0
+
 THRESH_Y = 0.5
 #variables needed for obstacle avoidance
 VELOCITY = 0.2
@@ -224,8 +223,8 @@ if __name__ == '__main__':
                 
                 #temporary intentional disturbance to regulate yaw
                 time.sleep(1)
-                mc.turn_left(7)
-                dronito.clean_takeoff()
+                #mc.turn_left(7)
+                #dronito.clean_takeoff()
                 logs = np.zeros([100000,5])
                 #parameter to run the main while
                 freq_main=0.1
@@ -244,23 +243,25 @@ if __name__ == '__main__':
                             # occupancy_grid = obstacle_mapping(multiranger.left, multiranger.right, multiranger.front, multiranger.back, occupancy_grid, position_estimate[0], position_estimate[1])
                             #print(explored_list)
                             
-                            if not dronito.is_starting():
-                                [dronito.edge,dronito.x_edge,dronito.y_edge] = edge_detection.is_edge(logs)
-                                dronito.edge = False ## to remove
-                                if dronito.edge == True:
-                                    edge_detection.find_platform_center(logs,dronito)
+                            # if not dronito.is_starting():
+                            #     [dronito.edge,dronito.x_edge,dronito.y_edge] = edge_detection.is_edge(logs)
+                            #     dronito.edge = False ## to remove
+                            #     if dronito.edge == True:
+                            #         edge_detection.find_platform_center(logs,dronito)
                             dronito.zigzag()
                         else:
-                            print("here!!!")
-                            break
+                            # print("here!!!")
+                            # break
                             if not dronito.is_arrived2():
-                                if not dronito.is_starting2():
-                                    [dronito.edge,dronito.x_edge,dronito.y_edge] = edge_detection.is_edge(logs)
-                                    if dronito.edge == True:
-                                        edge_detection.find_platform_center2(logs,dronito)
                                 dronito.zigzag_back()
                             else:
                                 break
+                            #     if not dronito.is_starting2():
+                            #         [dronito.edge,dronito.x_edge,dronito.y_edge] = edge_detection.is_edge(logs)
+                            #         if dronito.edge == True:
+                            #             edge_detection.find_platform_center2(logs,dronito)
+                            
+                            
                         
                         time.sleep(freq_main)
                     else:
