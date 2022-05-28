@@ -243,13 +243,14 @@ if __name__ == '__main__':
                             # occupancy_grid = obstacle_mapping(multiranger.left, multiranger.right, multiranger.front, multiranger.back, occupancy_grid, position_estimate[0], position_estimate[1])
                             #print(explored_list)
                             
+                            dronito.zigzag()
                             if not dronito.is_starting():
                                 [dronito.edge,dronito.x_edge,dronito.y_edge] = edge_detection.is_edge(logs)
                                 #dronito.edge = False ## to remove
                                 if dronito.edge == True:
                                     edge_detection.find_platform_center(logs,dronito)
                                     dronito.goal_reached()
-                            dronito.zigzag()
+                            
                         else:
                             # print("here!!!")
                             #break
