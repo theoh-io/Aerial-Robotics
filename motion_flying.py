@@ -205,15 +205,15 @@ if __name__ == '__main__':
         logconf.data_received_cb.add_callback(log_pos_callback)
         logconf.data_received_cb.add_callback(stab_log_data)
 
-        #start logging
-        logconf.start()
-
         with MotionCommander(scf, default_height=DEFAULT_HEIGHT) as mc:
             with Multiranger(scf) as multiranger:
                 dronito=Drone(mc, start_x=START_POS_X, start_y=START_POS_Y, x_offset=0.25)
+                
+                #start logging
+                logconf.start()
+
                 #little sleep needed for takeoff
                 time.sleep(1)
-                
                 
                 #variables needed for global nav
                 len_x, len_y = (BOX_LIMIT_X, BOX_LIMIT_Y)
