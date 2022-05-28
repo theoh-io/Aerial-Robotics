@@ -4,12 +4,12 @@ import time
 # Unit: meter
 DEFAULT_HEIGHT = 0.5 #1
 
-BOX_LIMIT_X = 3 #5
-BOX_LIMIT_Y = 0.5 #3
+BOX_LIMIT_X = 1 #5
+BOX_LIMIT_Y = 2.5 #3
 
 #START_POS_X = 0
 #START_POS_Y = 0
-GOAL_ZONE_X= 1.2
+GOAL_ZONE_X= 1.5
 START_ZONE_X=0.2
 TIME_EXPLORE=20
 TIME_EXPLORE2=20
@@ -229,23 +229,6 @@ class Drone():
         #Temporaire condition de retour basé sur le temps de vol
         if(time.time()-self.start_time2>TIME_EXPLORE2):
             self.goal_reached2()
-            
-
-        #FIXME need to be implemented outside of drone class
-        if (self.edge == True and (self.case != self.state_zigzag["start"]) and (self.case != self.state_zigzag["arrived"]) ):
-            print('Edge far detected!')
-            #yaw_landing=position_estimate[2]
-            #must record goal pos before landing because variation can occur
-            #goal_x=self.est_x
-            #goal_y=self.est_y
-            self.edge=1
-            #find_platform_center()
-            self.mc.land()
-            #time.sleep(1)
-            #self.mc.take_off(DEFAULT_HEIGHT)
-            #clean_takeoff(self.mc, [goal_x, goal_y, yaw_landing])
-            #self.case =state_zigzag["arrived"] #to get out of zigzag
-
 
     def zigzag_box(self):
         '''

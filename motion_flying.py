@@ -35,12 +35,12 @@ URI = uri_helper.uri_from_env(default='radio://0/80/2M/E7E7E7E714')
 DEFAULT_HEIGHT = 0.5 #1
 
 FOV_ZRANGER=math.radians(2.1)
-BOX_LIMIT_X = 1.7 #5
-BOX_LIMIT_Y = 2.2 #3
+BOX_LIMIT_X = 1 #5
+BOX_LIMIT_Y = 2.5 #3
 
 START_POS_X = 0
 START_POS_Y = 0
-GOAL_ZONE_X= 0.5
+GOAL_ZONE_X= 1.5
 START_EXPLORE_X = GOAL_ZONE_X-START_POS_X
 THRESH_Y = 0.5
 #variables needed for obstacle avoidance
@@ -255,6 +255,7 @@ if __name__ == '__main__':
                             dronito.zigzag()
                         else:
                             print("here!!!")
+                            break
                             if not dronito.is_arrived2():
                                 if not dronito.is_starting2():
                                     [dronito.edge,dronito.x_edge,dronito.y_edge] = edge_detection.is_edge(logs)
