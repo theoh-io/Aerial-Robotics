@@ -5,7 +5,7 @@ import time
 DEFAULT_HEIGHT = 0.5 #1
 
 BOX_LIMIT_X = 2 #5
-BOX_LIMIT_Y = 1.2 #3
+BOX_LIMIT_Y = 0.7 #3
 
 #START_POS_X = 0
 #START_POS_Y = 0
@@ -55,11 +55,12 @@ class Drone():
         #zigzag attributes
         self.state_zigzag={'start':-1, 'left':0, 'forward1':1, 'right':2, 'forward2':3, 'back2left':4, 'arrived':5}
         self.case=self.state_zigzag["start"]
-
         self.case2=self.state_zigzag["start"]
 
         self.start_time=time.time()
         self.start_time2=0
+        self.start_forward=0
+        self.start_back=0
         self.x_offset=x_offset
 
         #attributes: back_searching
@@ -127,7 +128,7 @@ class Drone():
         if self.case==self.state_zigzag["start"]:
             self.mc.start_forward()
             print('start')
-        if (self.case==self.state_zigzag["start"] and self.est_x>self.dist_explore) or self.case == self.state_zigzag["back2left"]:
+        if (self.case==self.state_zigzag["start"] and self.est_x>self.dist_explore) or (self.case == self.state_zigzag["back2left"] and self.est_x > self.start_forward+self.x_offset):
             self.regulate_yaw(0, self.est_yaw)
             self.case=self.state_zigzag["left"]
             self.mc.start_left()
@@ -136,8 +137,9 @@ class Drone():
             self.regulate_yaw(0, self.est_yaw)
             self.case=self.state_zigzag["forward1"]
             print('forward 1')
-            self.mc.forward(self.x_offset)
-        elif self.case == self.state_zigzag["forward1"]:
+            self.start_forward=self.est_x
+            self.mc.start_forward(self.x_offset)
+        elif self.case == self.state_zigzag["forward1"] and self.est_x > self.start_forward+self.x_offset:
             self.regulate_yaw(0, self.est_yaw)
             self.case=self.state_zigzag["right"]
             print('right')
@@ -146,7 +148,8 @@ class Drone():
             self.regulate_yaw(0, self.est_yaw)
             self.case = self.state_zigzag["forward2"]
             print('forward 2')
-            self.mc.forward(self.x_offset)
+            self.start_forward=self.est_x
+            self.mc.start_forward()
             self.case=self.state_zigzag["back2left"]
             print('back2left')
 
@@ -204,7 +207,7 @@ class Drone():
         if self.case2==self.state_zigzag["start"]:
             print('start_zz2')
             self.mc.start_back()
-        if (self.case2==self.state_zigzag["start"] and self.est_x<self.dist_explore) or self.case2 == self.state_zigzag["back2left"]:
+        if (self.case2==self.state_zigzag["start"] and self.est_x<self.dist_explore) or (self.case2 == self.state_zigzag["back2left"] and self.est_x < self.start_back-self.x_offset):
             self.regulate_yaw(0, self.est_yaw)
             self.case2=self.state_zigzag["left"]
             self.mc.start_left()
@@ -213,8 +216,9 @@ class Drone():
             self.regulate_yaw(0, self.est_yaw)
             self.case2=self.state_zigzag["forward1"]
             print('forward 1')
-            self.mc.back(self.x_offset)
-        elif self.case2 == self.state_zigzag["forward1"]:
+            self.start_back=self.est_x
+            self.mc.start_back()
+        elif self.case2 == self.state_zigzag["forward1"] and self.est_x < self.start_back-self.x_offset:
             self.regulate_yaw(0, self.est_yaw)
             self.case2=self.state_zigzag["right"]
             print('right')
@@ -223,7 +227,8 @@ class Drone():
             self.regulate_yaw(0, self.est_yaw)
             self.case2 = self.state_zigzag["forward2"]
             print('forward 2')
-            self.mc.back(self.x_offset)
+            self.start_back=self.est_x
+            self.mc.start_back()
             self.case2=self.state_zigzag["back2left"]
             print('back2left')
 
