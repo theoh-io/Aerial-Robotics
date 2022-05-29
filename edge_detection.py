@@ -83,9 +83,11 @@ def find_platform_center(logs, dronito):
         print(y1)
         print(dronito.est_y)
 
-        while(dronito.est_y<(y1-0.25)):
-            #pass
-            print('going left ',dronito.est_y,' ',y1)
+        etat=0
+        while(etat==0):
+            if(dronito.est_y>=(y1-0.25)):
+                etat=1
+            #print('going left ',dronito.est_y,' ',y1)
         
         x2_before=dronito.est_x
         y2_before=dronito.est_y
@@ -94,9 +96,14 @@ def find_platform_center(logs, dronito):
         dronito.mc.start_right()
         print(y1)
         print(dronito.est_y)
-        while(dronito.est_y>y1+0.25):
+
+        etat=0
+        while(etat):
+            if(dronito.est_y<=y1+0.25):
+                etat=1
             #pass
-            print('going right ',dronito.est_y,' ',y1)
+            #print('going right ',dronito.est_y,' ',y1)
+            
         x2_before=dronito.est_x
         y2_before=dronito.est_y
 

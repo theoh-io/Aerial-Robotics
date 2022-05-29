@@ -6,7 +6,7 @@ from threading import Event
 from threading import Timer
 import math
 import numpy as np
-#from astar import find_path
+
 import datetime as dt
 from zipfile import ZIP_BZIP2
 import os
@@ -22,12 +22,12 @@ from cflib.utils import uri_helper
 from cflib.utils.multiranger import Multiranger  
 from cflib.crazyflie.syncLogger import SyncLogger
 from cflib.positioning.position_hl_commander import PositionHlCommander
-from obs_avoid import *
+
 
 from drone import Drone
-
-import edge_detection
-
+from obs_avoid import *
+from edge_detection import *
+from astar import find_path, posestimation_to_grid, obstacle_mapping
 
 URI = uri_helper.uri_from_env(default='radio://0/80/2M/E7E7E7E714')
 
@@ -36,28 +36,16 @@ DEFAULT_HEIGHT = 0.5 #1
 
 FOV_ZRANGER=math.radians(2.1)
 
+START_POS_X = 0.3
+START_POS_Y = 0.5
 
-START_POS_X = 0
-START_POS_Y = 0
-
-THRESH_Y = 0.5
 #variables needed for obstacle avoidance
+THRESH_Y = 0.5
 VELOCITY = 0.2
-
-
-RESOLUTION_GRID=0.20 # m
-MIN_DISTANCE_OCCUP_GRIG = 3  # m
-
-## A* star or global nav variables
-start = [START_POS_X, START_POS_Y] 
-goal = [1,1] # to get from the zranger detection, to get when landing on base done
-
-EPSYLON=0.001
 
 #to be added in parser
 verbose = True
 #state_zigzag={'start':-1, 'left':0, 'forward1':1, 'right':2, 'forward2':3, 'back2left':4, 'arrived':5}
-
 
 deck_attached_event = Event()
 
@@ -131,47 +119,6 @@ def store_log_data():
 
 # -------------------------------------------------------------------------------------------------------------
 
-def posestimation_to_grid(position_estimate_x,position_estimate_y):
-    return (int((position_estimate_x)/RESOLUTION_GRID), int((position_estimate_y)/RESOLUTION_GRID))
-    #return (int((position_estimate_x+START_POS_X)/RESOLUTION_GRID), int((position_estimate_y+START_POS_Y)/RESOLUTION_GRID))
-
-def obstacle_mapping(range_left, range_right, range_front, range_back, occupancy_grid, pos_x, pos_y):
-
-    if(range_front < MIN_DISTANCE_OCCUP_GRIG):
-        pos_obsf=(pos_x+range_front)
-        if(pos_obsf>BOX_LIMIT_X-START_POS_X):
-            print("Obstacle mapped at front")
-            idx_x,idx_y = posestimation_to_grid(pos_obsf,pos_y)
-            occupancy_grid[idx_x,idx_y]=1
-        
-    if(range_back < MIN_DISTANCE_OCCUP_GRIG):
-        pos_obsb=(pos_x-range_back)
-        if(pos_obsb<-START_POS_X):
-            print("Obstacle mapped at back")
-            idx_x,idx_y = posestimation_to_grid(pos_obsb,pos_y)
-            occupancy_grid[idx_x,idx_y]=1
-
-    if(range_left < MIN_DISTANCE_OCCUP_GRIG):
-        pos_obsl=pos_y+range_left
-        if(pos_obsl>BOX_LIMIT_Y-START_POS_Y):
-            print("Obstacle mapped at left")
-            idx_x,idx_y = posestimation_to_grid(pos_x,pos_obsl)
-            occupancy_grid[idx_x,idx_y]=1
-
-    if(range_right < MIN_DISTANCE_OCCUP_GRIG):
-        pos_obsr=pos_y-range_right
-        if(pos_obsr<-START_POS_Y):
-            print("Obstacle mapped at right")
-            idx_x, idx_y = posestimation_to_grid(pos_x,pos_obsr)
-            occupancy_grid[idx_x,idx_y]=1
-            
-    return occupancy_grid
-
-# -------------------------------------------------------------------------------------------------------------
-
-
-# Edge detection functions ---------------------------------------------------------------------------------
-
 if __name__ == '__main__':
 
     cflib.crtp.init_drivers()
@@ -212,14 +159,12 @@ if __name__ == '__main__':
                 time.sleep(1)
                 
                 #variables needed for global nav
-                #len_x, len_y = (BOX_LIMIT_X, BOX_LIMIT_Y)
-                # occupancy_grid = np.zeros((len_x,len_y))
-                # explored_list = []
+                occupancy_grid = np.zeros((int(dronito.boxborder_front*100),int(dronito.boxborder_left*100))) #dm
+                explored_list = []
                 
                 #variables needed for obstacle avoidance
                 velocity_left = 0
                 velocity_front = 0
-
                 
                 #temporary intentional disturbance to regulate yaw
                 time.sleep(1)
@@ -231,35 +176,46 @@ if __name__ == '__main__':
 
 
                 while(1):
-                    #print(obstacle_avoidance())
                     if True:#(obstacle_avoidance(multiranger.left, multiranger.right, multiranger.front, multiranger.back) == False):
                         #if no obstacle is being detected let zigzag manage the speeds
                         if not dronito.is_arrived():
 
-                            # #explored list filling
-                            # if not((pos_to_grid(position_estimate[0],position_estimate[1])) in explored_list):
-                            #     explored_list.append(pos_to_grid(position_estimate[0],position_estimate[1]))
-                            # #occupancy_grid filling
-                            # occupancy_grid = obstacle_mapping(multiranger.left, multiranger.right, multiranger.front, multiranger.back, occupancy_grid, position_estimate[0], position_estimate[1])
-                            #print(explored_list)
-                            
+                            dronito.zigzag()
+
+                            #explored list filling
+                            if(dronito.est_x>0 and dronito.est_y>0):
+                                if not((posestimation_to_grid(dronito.est_x,dronito.est_y)) in explored_list):
+                                    explored_list.append(posestimation_to_grid(dronito.est_x,dronito.est_y))
+
+                            #occupancy_grid filling
+                            occupancy_grid = obstacle_mapping(dronito, multiranger.left, multiranger.right, multiranger.front, multiranger.back, occupancy_grid, dronito.est_x, dronito.est_y)
+                            print(explored_list)
+
                             if not dronito.is_starting():
-                                [dronito.edge,dronito.x_edge,dronito.y_edge] = edge_detection.is_edge(logs)
+                                [dronito.edge,dronito.x_edge,dronito.y_edge] = is_edge(logs)
                                 #dronito.edge = False ## to remove
                                 if dronito.edge == True:
-                                    edge_detection.find_platform_center(logs,dronito)
+                                    find_platform_center(logs,dronito)
                                     dronito.goal_reached()
-                            dronito.zigzag()
                         else:
                             # print("here!!!")
                             #break
                             if not dronito.is_arrived2():
+                                #A star
+                                start = [dronito.start_x, dronito.start_y] 
+                                goal = [dronito.goal_x,dronito.goal_y] 
+                                print("occupancy grid ",occupancy_grid)
+                                #path=find_path(start, goal, occupancy_grid, dronito.boxborder_front+1, dronito.boxborder_left+1, explored_list)
+                                #print("PATH PROPOSED BY ASTAR",path)
+                                #mc.stop()
+
+                                # before A star
                                 dronito.zigzag_back()
                                 
                                 if not dronito.is_starting2():
-                                    [dronito.edge,dronito.x_edge,dronito.y_edge] = edge_detection.is_edge(logs)
+                                    [dronito.edge,dronito.x_edge,dronito.y_edge] = is_edge(logs)
                                     if dronito.edge == True:
-                                        edge_detection.find_platform_center2(logs,dronito)
+                                        find_platform_center2(logs,dronito)
                                         dronito.goal_reached2()
                             else:
                                 break

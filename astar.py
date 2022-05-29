@@ -2,15 +2,58 @@ import numpy as np
 import math
 
 # Global variables
-START_POS_X = 0
-START_POS_Y = 0
+#START_POS_X = 0
+#START_POS_Y = 0
 
 ## A* star or global nav variables
-start = (START_POS_X, START_POS_Y) # to get before the start of the drone
-goal = (9,4) # to get from the zranger detection, to get when landing on base done
-len_x, len_y = (10, 5)
+#start = (START_POS_X, START_POS_Y) # to get before the start of the drone
+#goal = (9,4) # to get from the zranger detection, to get when landing on base done
+#len_x, len_y = (10, 5)
+
+## A* star or global nav variables
+RESOLUTION_GRID = 30 # cm
+MIN_DISTANCE_OCCUP_GRIG = 1 # m
 
 ###################################################################################################################
+
+def posestimation_to_grid(position_estimate_x,position_estimate_y):
+    print("ESTIMATE X", position_estimate_x)
+    print("ESTIMATE Y", position_estimate_y)
+    return (int((position_estimate_x*100)/RESOLUTION_GRID), int((position_estimate_y*100)/RESOLUTION_GRID))
+
+def obstacle_mapping(dronito, range_left, range_right, range_front, range_back, occupancy_grid, pos_x, pos_y):
+    
+    print("obst left, right, front, back: ",  range_left, range_right, range_front, range_back)
+    if(range_front < MIN_DISTANCE_OCCUP_GRIG):
+        pos_obsf=(pos_x+range_front)
+        if(pos_obsf>dronito.boxborder_front-dronito.start_x):
+            print("Obstacle mapped at front")
+            idx_x,idx_y = posestimation_to_grid(pos_obsf,pos_y)
+            occupancy_grid[idx_x,idx_y]=1
+        
+    if(range_back < MIN_DISTANCE_OCCUP_GRIG):
+        pos_obsb=(pos_x-range_back)
+        if(pos_obsb<-dronito.start_x):
+            print("Obstacle mapped at back")
+            idx_x,idx_y = posestimation_to_grid(pos_obsb,pos_y)
+            occupancy_grid[idx_x,idx_y]=1
+
+    if(range_left < MIN_DISTANCE_OCCUP_GRIG):
+        pos_obsl=pos_y+range_left
+        if(pos_obsl>dronito.boxborder_left-dronito.start_y):
+            print("Obstacle mapped at left")
+            idx_x,idx_y = posestimation_to_grid(pos_x,pos_obsl)
+            occupancy_grid[idx_x,idx_y]=1
+
+    if(range_right < MIN_DISTANCE_OCCUP_GRIG):
+        pos_obsr=pos_y-range_right
+        if(pos_obsr<-dronito.start_y):
+            print("Obstacle mapped at right")
+            idx_x, idx_y = posestimation_to_grid(pos_x,pos_obsr)
+            occupancy_grid[idx_x,idx_y]=1
+            
+    return occupancy_grid
+    
 # Define all types of movements between two points:
 def type_deplacement(ptA,ptB):
     x = ptA[0]-ptB[0]
@@ -220,7 +263,7 @@ def find_path(start, goal, occupancy_grid, len_x, len_y, explored_list):
     return path
 
 #np array
-occupancy_grid = np.zeros((len_x,len_y))
+#occupancy_grid = np.zeros((len_x,len_y))
 
 #occupancy_grid[2,1] = 1
 #occupancy_grid[3,1] = 1
@@ -237,5 +280,5 @@ occupancy_grid = np.zeros((len_x,len_y))
 # dict of tuple
 #explored_list = [(0,1), (0,2), (0,3), (0,4), (1,1), (1,2), (1,3), (1,4), (2,2), (2,3), (2,4),(3,2), (3,3), (3,4), (4,3), (4,4), (5,3), (5,4)]
 
-path=find_path(start, goal, occupancy_grid, len_x+1, len_y+1, explored_list)
-print(path)
+#path=find_path(start, goal, occupancy_grid, len_x+1, len_y+1, explored_list)
+#print(path)

@@ -83,8 +83,6 @@ class Drone():
         self.x_edge=0
         self.y_edge=0
 
-
-
     def update_est(self, x, y, z, z_range, yaw):
         #estimation in local frame
         self.est_x=x
@@ -118,7 +116,6 @@ class Drone():
             self.est_z=z
             self.z_range=z_range
             self.est_yaw=yaw
-
 
     def zigzag(self):
         #print(state_zigzag['start'])
@@ -187,7 +184,6 @@ class Drone():
         if self.case2 == self.state_zigzag['arrived']:
             return True
         return False
-
 
     def is_starting(self):
         if self.case == self.state_zigzag['start']:
