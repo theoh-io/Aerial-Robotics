@@ -1,12 +1,12 @@
 
 
 # const
-VELOCITY = 0.2
+VELOCITY = 0.5
 THRESH_Y = 0.9
 LOW_VELOCITY = 0.05
 MIN_DISTANCE = 0.5  # m
 SAFETY_MARGIN = 2
-SMALL_DIST = 0.30
+SMALL_DIST = 0.4
 
 #variables
 pos_estimate_before_x = 0
