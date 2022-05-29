@@ -23,7 +23,7 @@ from cflib.utils.multiranger import Multiranger
 from cflib.crazyflie.syncLogger import SyncLogger
 from cflib.positioning.position_hl_commander import PositionHlCommander
 from obs_avoid import *
-from drone import Drone
+from drone import VELOCITY_LANDING, Drone
 
 import edge_detection
 
@@ -34,7 +34,6 @@ URI = uri_helper.uri_from_env(default='radio://0/80/2M/E7E7E7E714')
 DEFAULT_HEIGHT = 0.5 #1
 
 FOV_ZRANGER=math.radians(2.1)
-
 
 START_POS_X = 0.3
 START_POS_Y = 0.75
