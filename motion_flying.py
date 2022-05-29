@@ -11,6 +11,8 @@ import datetime as dt
 from zipfile import ZIP_BZIP2
 import os
 import matplotlib.pyplot as plt
+import argparse
+
 
 
 import cflib.crtp
@@ -168,10 +170,85 @@ def store_log_data():
 
 # -------------------------------------------------------------------------------------------------------------
 
+#------------------------------------------------------------------------------------------------------------
+#Parser function
+def get_args():
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+    #General Arguments
+    parser.add_argument('-x', '--arenaX', default='3', type=float,
+                        help='size of the arena in X')
+    parser.add_argument('-y', '--arenaY', default='1.5', type=float,
+                        help='size of the arena in Y')
+    parser.add_argument('--startX', default='0.3', type=float,
+                        help='start position in X')
+    parser.add_argument('--startY', default='0.3', type=float,
+                        help='start position in Y')
+    parser.add_argument('--height', default='0.5', type=float,
+                        help='default height')
+    parser.add_argument('--goal_zone', default='1.5', type=float,
+                        help='goal zone: landing pad inside, to start exploring')
+    parser.add_argument('--start_zone', default='0.5', type=float,
+                        help='start zone: landing pad inseinde, exploring on way back')
+    parser.add_argument('--vel', default='0.5', type=float,
+                        help='Default velocity used')
+    parser.add_argument('--vel_takeoff', default='0.6', type=float,
+                        help='Velocity used for takeoff')
+    parser.add_argument('--vel_landing', default='0.1', type=float,
+                        help='velocity used for landing')
+
+    #Obstacle Avoidance Arguments
+    parser.add_argument('--vel_obst', default='0.5', type=float,
+                        help='Velocity for obstacle avoidance')
+    parser.add_argument('--low_vel_obst', default='0.05', type=float,
+                        help='threshold pour la distance au mur')
+    parser.add_argument('--thresh_y', default='0.9', type=float,
+                        help='threshold pour la distance au mur')
+    parser.add_argument('--min_dist', default='0.5', type=float,
+                        help='min distance for an obstacle to be detected')
+    parser.add_argument('--margin', default='2', type=int,
+                        help='safety margin for no detection before switching obst_avoid cases')
+    parser.add_argument('--small_dist', default='0.4', type=float,
+                        help='Rayon de tolérance pour avoir fini de contourner l obstacle  /!\ a tune en fonction de la vitesse')
+    
+    #Edge Detection Arguments
+    parser.add_argument('--delta_x', default='0.1', type=float,
+                        help='x distance between the edge detec and the landing')
+    parser.add_argument('--delta_y', default='0.25', type=float,
+                        help='y distance between the edge detec and the landing')
+    parser.add_argument('--vel_edge', default='0.2', type=float,
+                        help='vel after platform edge det for calib of platform center')
+    parser.add_argument('--vel_edge_goal', default='0.1', type=float,
+                        help='vel after second platform edge det until landing')
+
+    #ZigZag Arguments
+    parser.add_argument('--time_exp', default='400', type=int,
+                        help='temporary argument to end the first exploration based on timing condition')
+    parser.add_argument('--time_exp_2', default='400', type=int,
+                        help='temporary argument to end the second exploration based on timing condition')
+    parser.add_argument('--time_exp_box', default='400', type=int,
+                        help='temporary argument to end the box exploration based on timing condition')
+    parser.add_argument('--thresh_back', default='0.2', type=float,
+                        help='temporary argument to add margin to allow going out of the box compensating drift error')
+
+    args = parser.parse_args()
+
+    return args
+
+def print_config(args):
+    print(f"Size of the Arena: {args.arenaX}, {args.arenaY}")
+    print(f"Start Position: {args.startX}, {args.startY}")
+    print(f"Goal Zone: {args.goal_zone}, Start Zone: {args.start_zone}")
+    print(f"Global velocity: {args.vel}, takeoff: {args.vel_takeoff}, landing: {args.vel_landing}")
+
 
 # Edge detection functions ---------------------------------------------------------------------------------
 
 if __name__ == '__main__':
+    args=get_args()
+    print_config(args)
+    #args_drone=[args.arenaX, args.arenaY, args.startX, args.startY, args.goal_zone, args.start_zone, args.vel]
 
     cflib.crtp.init_drivers()
     with SyncCrazyflie(URI, cf=Crazyflie(rw_cache='./cache')) as scf:
@@ -200,10 +277,12 @@ if __name__ == '__main__':
         logconf.data_received_cb.add_callback(log_pos_callback)
         logconf.data_received_cb.add_callback(stab_log_data)
 
+        #start logging
+        logconf.start()
+
         with MotionCommander(scf, default_height=DEFAULT_HEIGHT) as mc:
             with Multiranger(scf) as multiranger:
-                #start logging
-                logconf.start()
+                
                 
                 dronito.mc=mc
 
