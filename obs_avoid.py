@@ -50,10 +50,10 @@ def  obstacle_avoid_left_right(multiranger_left, multiranger_right, multiranger_
             print("too close to border")
             if (dronito.case==dronito.state_zigzag['arrived']):
                 dronito.case2=dronito.state_zigzag["forward2"]
-                from_right = 0
+                from_left = 0
             else:
                 dronito.case=dronito.state_zigzag["forward2"]
-                from_right = 0
+                from_left = 0
             return False  
         
         if abs(pos_estimate_before_x) > abs(pos_estimate_before_x - (dronito.boxborder_front )): #back better than front?
