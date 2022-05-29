@@ -40,16 +40,11 @@ FOV_ZRANGER=math.radians(2.1)
 RESOLUTION_GRID=0.20 # m
 MIN_DISTANCE_OCCUP_GRIG = 3  # m
 
-## A* star or global nav variables
-start = [START_POS_X, START_POS_Y] 
-goal = [1,1] # to get from the zranger detection, to get when landing on base done
-
 EPSYLON=0.001
 
 #to be added in parser
 verbose = True
 #state_zigzag={'start':-1, 'left':0, 'forward1':1, 'right':2, 'forward2':3, 'back2left':4, 'arrived':5}
-
 
 deck_attached_event = Event()
 
