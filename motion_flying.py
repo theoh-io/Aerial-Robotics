@@ -165,15 +165,15 @@ def get_args():
     #General Arguments
     parser.add_argument('-x', '--arenaX', default='3', type=float,
                         help='size of the arena in X')
-    parser.add_argument('-y', '--arenaY', default='1.5', type=float,
+    parser.add_argument('-y', '--arenaY', default='1.2', type=float,
                         help='size of the arena in Y')
     parser.add_argument('--startX', default='0.3', type=float,
                         help='start position in X')
-    parser.add_argument('--startY', default='0.3', type=float,
+    parser.add_argument('--startY', default='0.6', type=float,
                         help='start position in Y')
-    parser.add_argument('--goal_zone', default='1.5', type=float,
+    parser.add_argument('--goal_zone', default='2', type=float,
                         help='goal zone: landing pad inside, to start exploring')
-    parser.add_argument('--start_zone', default='0.5', type=float,
+    parser.add_argument('--start_zone', default='1', type=float,
                         help='start zone: landing pad inseinde, exploring on way back')
     parser.add_argument('--vel_takeoff', default='0.6', type=float,
                         help='Velocity used for takeoff')
@@ -244,20 +244,16 @@ if __name__ == '__main__':
     # args_drone=[args.arenaX, args.arenaY, args.startX, args.startY, args.goal_zone, args.start_zone, args.vel, args.vel_takeoff, args.vel_landing]
     cflib.crtp.init_drivers()
     with SyncCrazyflie(URI, cf=Crazyflie(rw_cache='./cache')) as scf:
+
         dronito=Drone(None,args)
-
-        # scf.cf.param.set_value('kalman.resetEstimation', '1')
-        # time.sleep(0.1)
-        # scf.cf.param.set_value('kalman.resetEstimation', '0')
-        # time.sleep(2)
-
+  
         #want to know if the flow deck is correctly attached before flying,
         scf.cf.param.add_update_callback(group="deck", name="bcFlow2",
                                          cb=param_deck_flow)
         #or
-        if not deck_attached_event.wait(timeout=5):
-            print('No flow deck detected!')
-            sys.exit(1)
+        # if not deck_attached_event.wait(timeout=5):
+        #     print('No flow deck detected!')
+        #     sys.exit(1)
 
         logconf = LogConfig(name='Position', period_in_ms=10)
         logconf.add_variable('stateEstimate.x', 'float')
@@ -271,9 +267,12 @@ if __name__ == '__main__':
 
         #start logging
         logconf.start()
+        time.sleep(1)
 
         with MotionCommander(scf, default_height=DEFAULT_HEIGHT) as mc:
             with Multiranger(scf) as multiranger:
+                mc._reset_position_estimator()
+                
                 dronito.mc=mc
 
                 #little sleep needed for takeoff
@@ -286,7 +285,7 @@ if __name__ == '__main__':
 
                 
                 #temporary intentional disturbance to regulate yaw
-                time.sleep(1)
+                #time.sleep(1)
                 #mc.turn_left(7)
                 #dronito.clean_takeoff()
                 logs = np.zeros([100000,5])
@@ -312,7 +311,7 @@ if __name__ == '__main__':
                             
                             dronito.zigzag()
                             if not dronito.is_starting():
-                                [dronito.edge,dronito.x_edge,dronito.y_edge] = edge_detection.is_edge(logs)
+                                [dronito.edge,dronito.x_edge,dronito.y_edge] = edge_detection.is_edge(logs,first_edge=True)
                                 #dronito.edge = False ## to remove
                                 if dronito.edge == True:
                                     edge_detection.find_platform_center(logs,dronito)
@@ -320,12 +319,12 @@ if __name__ == '__main__':
                             
                         else:
                             # print("here!!!")
-                            #break
+
                             if not dronito.is_arrived2():
                                 dronito.zigzag_back()
                                 
                                 if not dronito.is_starting2():
-                                    [dronito.edge,dronito.x_edge,dronito.y_edge] = edge_detection.is_edge(logs)
+                                    [dronito.edge,dronito.x_edge,dronito.y_edge] = edge_detection.is_edge(logs,first_edge=True)
                                     if dronito.edge == True:
                                         edge_detection.find_platform_center2(logs,dronito)
                                         dronito.goal_reached2()

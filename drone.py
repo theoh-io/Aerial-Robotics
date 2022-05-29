@@ -202,10 +202,13 @@ class Drone():
         print("in zigzag back")
         print(f"est x : {self.est_x}, dist exp :{self.dist_explore2} ")
         print(f"est y : {self.est_y}")
+        print(f"condition : {(self.est_x-self.dist_explore2)}")
         if self.case2==self.state_zigzag["start"]:
-            print('start_zz2')
             self.mc.start_back()
+            print('start_zz2')
+            #time.sleep(0.1)
         if (self.case2==self.state_zigzag["start"] and self.est_x<self.dist_explore2) or (self.case2 == self.state_zigzag["back2left"] and self.est_x < self.start_back-self.x_offset):
+            print("start zzback")
             self.regulate_yaw(0, self.est_yaw)
             self.case2=self.state_zigzag["left"]
             self.mc.start_left()
@@ -415,7 +418,7 @@ class Drone():
 
     def clean_takeoff2(self):
         print("in clean takeoff2")
-        time.sleep(1)
+        time.sleep(3)
         # curr_x = self.est_x
         # curr_y = self.est_y
         #self.landed=1 #flag to change the estimation function
@@ -437,6 +440,7 @@ class Drone():
         self.case = self.state_zigzag["arrived"]
         self.landed=1 #used to decide which position estimation function to use
         time.sleep(5)
+        self.mc._reset_position_estimator()
         self.mc.take_off(velocity=self.vel_takeoff)
         self.clean_takeoff2()
         
