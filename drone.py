@@ -42,7 +42,7 @@ class Drone():
         self.x_offset=args.x_offset
         ##temporary attributes
         self.time_explore=args.time_exp
-        self.time_explore2=args.time_exp2
+        self.time_explore2=args.time_exp_2
         self.time_explore_box=args.time_exp_box
         self.thresh_back=args.thresh_back
 

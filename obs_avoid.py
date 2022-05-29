@@ -1,11 +1,5 @@
 
 
-# const
-dronito.vel_obst = 0.5
-dronito.thresh_y = 0.9
-dronito.low_vel_obs = 0.05
-dronito.margin = 2
-dronito.small_dist = 0.2
 
 #variables
 pos_estimate_before_x = 0
