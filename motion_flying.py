@@ -39,10 +39,6 @@ FOV_ZRANGER=math.radians(2.1)
 START_POS_X = 0.3
 START_POS_Y = 0.75
 
-THRESH_Y = 0.5
-#variables needed for obstacle avoidance
-VELOCITY = 0.2
-
 
 RESOLUTION_GRID=0.20 # m
 MIN_DISTANCE_OCCUP_GRIG = 3  # m

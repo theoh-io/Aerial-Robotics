@@ -9,13 +9,13 @@ BOX_LIMIT_Y = 1.5 #3
 
 #START_POS_X = 0
 #START_POS_Y = 0
-GOAL_ZONE_X= 1.5
+GOAL_ZONE_X= 2
 START_ZONE_X=1
 TIME_EXPLORE=400
 TIME_EXPLORE2=400
 TIME_EXPLOREBOX=10
 #variables needed for obstacle avoidance
-VELOCITY = 0.2
+VELOCITY = 0.5
 EPSYLON=0.0001
 #variables for back, to compensate for drift in est x and end of area
 THRESHOLD_BACK_X=0.20 
