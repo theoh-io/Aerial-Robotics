@@ -9,6 +9,9 @@ VELOCITY_EDGE = 0.2
 VELOCITY_EDGE_GOAL = 0.1
 DELTA_X = 0.1
 DELTA_Y = 0.25
+#dronito.delta_x
+#dronito.delta_y
+
 
 def is_edge(logs):
 
@@ -78,7 +81,7 @@ def find_platform_center(logs, dronito):
     """
     
     #logs = np.zeros([100000,4])
-    dronito.mc.back(0.4)
+    dronito.mc.back(0.4, velocity=VELOCITY_EDGE)
 
     time.sleep(1)
 
@@ -87,7 +90,7 @@ def find_platform_center(logs, dronito):
         print(y1)
         print(dronito.est_y)
 
-        while(dronito.est_y<(y1-0.25)):
+        while(dronito.est_y<(y1-DELTA_Y)):
             #pass
             print('going left ',dronito.est_y,' ',y1)
         
@@ -98,7 +101,7 @@ def find_platform_center(logs, dronito):
         dronito.mc.start_right(velocity=VELOCITY_EDGE)
         print(y1)
         print(dronito.est_y)
-        while(dronito.est_y>y1+0.25):
+        while(dronito.est_y>y1+DELTA_Y):
             #pass
             print('going right ',dronito.est_y,' ',y1)
         x2_before=dronito.est_x
@@ -148,7 +151,7 @@ def find_platform_center(logs, dronito):
             return
     
     #before working dronito.mc.forward(0.05)
-    dronito.mc.forward(0.1, velocity=VELOCITY_EDGE_GOAL)
+    dronito.mc.forward(DELTA_X, velocity=VELOCITY_EDGE_GOAL)
 
     time.sleep(1)
 
@@ -229,7 +232,7 @@ def find_platform_center2(logs, dronito):
         print(y1)
         print(dronito.est_y)
 
-        while(dronito.est_y<(y1-0.25)):
+        while(dronito.est_y<(y1-DELTA_Y)):
             #pass
             print('going left ',dronito.est_y,' ',y1)
         
@@ -245,7 +248,7 @@ def find_platform_center2(logs, dronito):
         dronito.mc.start_right(velocity=VELOCITY_EDGE)
         print(y1)
         print(dronito.est_y)
-        while(dronito.est_y>y1+0.25):
+        while(dronito.est_y>y1+DELTA_Y):
             #pass
             print('going right ',dronito.est_y,' ',y1)
         x2_before=dronito.est_x
@@ -260,7 +263,7 @@ def find_platform_center2(logs, dronito):
         dronito.mc.start_forward(velocity=VELOCITY_EDGE)
         print(x1)
         print(dronito.est_x)
-        while(dronito.est_x<x1-0.25):
+        while(dronito.est_x<x1-DELTA_Y):
             #pass
             print('going forward ',dronito.est_x,' ',y1)
         x2_before=dronito.est_x
@@ -311,11 +314,11 @@ def find_platform_center2(logs, dronito):
     #before working dronito.mc.forward(0.05)
     
     if (dronito.case2 == dronito.state_zigzag["right"]) or (dronito.case2 == dronito.state_zigzag["left"]):
-        dronito.mc.back(0.1, velocity=VELOCITY_EDGE_GOAL)
+        dronito.mc.back(DELTA_X, velocity=VELOCITY_EDGE_GOAL)
         time.sleep(1)
    
     if (dronito.case2 == dronito.state_zigzag["forward1"]) or (dronito.case2 == dronito.state_zigzag["forward2"]):
-        dronito.mc.right(0.1, velocity=VELOCITY_EDGE_GOAL)
+        dronito.mc.right(DELTA_X, velocity=VELOCITY_EDGE_GOAL)
         time.sleep(1)
 
     dronito.goal_x=dronito.est_x
