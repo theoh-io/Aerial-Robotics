@@ -185,14 +185,10 @@ def get_args():
                         help='start position in X')
     parser.add_argument('--startY', default='0.3', type=float,
                         help='start position in Y')
-    parser.add_argument('--height', default='0.5', type=float,
-                        help='default height')
     parser.add_argument('--goal_zone', default='1.5', type=float,
                         help='goal zone: landing pad inside, to start exploring')
     parser.add_argument('--start_zone', default='0.5', type=float,
                         help='start zone: landing pad inseinde, exploring on way back')
-    parser.add_argument('--vel', default='0.5', type=float,
-                        help='Default velocity used')
     parser.add_argument('--vel_takeoff', default='0.6', type=float,
                         help='Velocity used for takeoff')
     parser.add_argument('--vel_landing', default='0.1', type=float,
@@ -223,13 +219,19 @@ def get_args():
                         help='vel after second platform edge det until landing')
 
     #ZigZag Arguments
+    parser.add_argument('--x_offset', default='0.25', type=float,
+                        help='offset used in zigzag')
+    parser.add_argument('--box_x', default='0.2', type=float,
+                        help='x dim for box used in zigzagbox')
+    parser.add_argument('--box_y', default='0.2', type=float,
+                        help='y dim for box used in zigzagbox')
     parser.add_argument('--time_exp', default='400', type=int,
                         help='temporary argument to end the first exploration based on timing condition')
     parser.add_argument('--time_exp_2', default='400', type=int,
                         help='temporary argument to end the second exploration based on timing condition')
     parser.add_argument('--time_exp_box', default='400', type=int,
                         help='temporary argument to end the box exploration based on timing condition')
-    parser.add_argument('--thresh_back', default='0.2', type=float,
+    parser.add_argument('--thresh_back', default='0', type=float,
                         help='temporary argument to add margin to allow going out of the box compensating drift error')
 
     args = parser.parse_args()
@@ -248,11 +250,15 @@ def print_config(args):
 if __name__ == '__main__':
     args=get_args()
     print_config(args)
-    #args_drone=[args.arenaX, args.arenaY, args.startX, args.startY, args.goal_zone, args.start_zone, args.vel]
 
+    # arena_dim=[args.arenaX, args.arenaY, args.goal_zone, args.start_zone]
+    # start_pos=[args.startX, args.startY]
+    # args_vel=[args.vel, args.vel_takeoff, args.vel_landing]
+    # args_drone=[args.x_offset, args.box_x, args]
+    # args_drone=[args.arenaX, args.arenaY, args.startX, args.startY, args.goal_zone, args.start_zone, args.vel, args.vel_takeoff, args.vel_landing]
     cflib.crtp.init_drivers()
     with SyncCrazyflie(URI, cf=Crazyflie(rw_cache='./cache')) as scf:
-        dronito=Drone(None, start_x=START_POS_X, start_y=START_POS_Y, x_offset=0.25)
+        dronito=Drone(None,args)
 
         # scf.cf.param.set_value('kalman.resetEstimation', '1')
         # time.sleep(0.1)
@@ -282,8 +288,6 @@ if __name__ == '__main__':
 
         with MotionCommander(scf, default_height=DEFAULT_HEIGHT) as mc:
             with Multiranger(scf) as multiranger:
-                
-                
                 dronito.mc=mc
 
                 #little sleep needed for takeoff

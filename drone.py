@@ -1,32 +1,17 @@
 import time
 
 
-# Unit: meter
-DEFAULT_HEIGHT = 0.5 #1
-
-BOX_LIMIT_X = 3.5 #5
-BOX_LIMIT_Y = 1.5 #3
-
-#START_POS_X = 0
-#START_POS_Y = 0
-GOAL_ZONE_X= 1.5
-START_ZONE_X=1
-TIME_EXPLORE=400
-TIME_EXPLORE2=400
-TIME_EXPLOREBOX=10
-#variables needed for obstacle avoidance
-VELOCITY = 0.2
+#Threshold for Comparision
 EPSYLON=0.0001
-#variables for back, to compensate for drift in est x and end of area
-THRESHOLD_BACK_X=0.20 
 
-VELOCITY_LANDING=0.1
 
 class Drone():
-    def __init__(self, mc, start_x, start_y, x_offset=0.25, verbose=True):
+    def __init__(self, mc, args, verbose=True):
         self.verbose=verbose
         self.mc = mc
-
+        #velocity attributes
+        self.vel_takeoff=args.vel_takeoff
+        self.vel_landing=args.vel_landing
         #estimation attributes
         self.est_x=0
         self.est_y=0
@@ -34,40 +19,36 @@ class Drone():
         self.z_range=0
         self.est_yaw=0
         #start position attributes
-        self.start_x=start_x
-        self.start_y=start_y
+        self.start_x=args.startX
+        self.start_y=args.startY
         #goal position attributes
         self.goal_x=0
         self.goal_y=0
         #Box dimensions attributes
-        # self.global_frame=False
-        self.boxborder_left=BOX_LIMIT_Y
+        self.boxborder_left=args.arenaY
         self.boxborder_right=0
-        self.boxborder_front=BOX_LIMIT_X
+        self.boxborder_front=args.arenaX
         self.boxborder_back=0
-        self.dist_explore=GOAL_ZONE_X
-        self.dist_explore2=START_ZONE_X
-        #Arena local frame
-        # self.boxborder_left=BOX_LIMIT_Y-start_y
-        # self.boxborder_right=-start_y
-        # self.boxborder_front=BOX_LIMIT_X-start_x
-        # self.boxborder_back=-start_x
-        # self.dist_explore=GOAL_ZONE_X-start_x
-        # self.dist_explore2=START_ZONE_X-start_x
+        self.dist_explore=args.goal_zone
+        self.dist_explore2=args.start_zone
         #zigzag attributes
         self.state_zigzag={'start':-1, 'left':0, 'forward1':1, 'right':2, 'forward2':3, 'back2left':4, 'arrived':5}
         self.case=self.state_zigzag["start"]
         self.case2=self.state_zigzag["start"]
-
         self.start_time=time.time()
         self.start_time2=0
         self.start_forward=0
         self.start_back=0
-        self.x_offset=x_offset
+        self.x_offset=args.x_offset
+        ##temporary attributes
+        self.time_explore=args.time_exp
+        self.time_explore2=args.time_exp2
+        self.time_explore_box=args.time_exp_box
+        self.thresh_back=args.thresh_back
 
         #attributes: back_searching
-        self.zone_x=0.2
-        self.zone_y=0.2
+        self.zone_x=args.box_x
+        self.zone_y=args.box_y
         self.pos_x=0
         self.pos_y=0
         self.x_reached=0
@@ -85,11 +66,21 @@ class Drone():
         self.edge=0
         self.x_edge=0
         self.y_edge=0
+        self.delta_x=args.delta_x
+        self.delta_y=args.delta_y
+        self.vel_edge=args.vel_edge
+        self.vel_edge_goal=args.vel_edge_goal
 
         #attributes obs avoidance
         self.velocity_left = 0
         self.velocity_front = 0
-
+        self.vel_obst=args.vel_obst
+        self.low_vel_obst=args.low_vel_obst
+        self.thresh_y=args.thresh_y
+        self.min_dist=args.min_dist
+        self.margin=args.margin
+        self.small_dist=args.small_dist
+        
 
     def update_est(self, x, y, z, z_range, yaw):
         #estimation in local frame
@@ -171,7 +162,7 @@ class Drone():
             self.goal_reached()
         
         #Temporaire condition de retour basé sur le temps de vol
-        #if(time.time()-self.start_time>TIME_EXPLORE):
+        #if(time.time()-self.start_time>self.time_explore):
         #    print("stop due au timing")
         #    self.goal_reached()
             # print(" Exploration time exceeded")
@@ -240,7 +231,7 @@ class Drone():
             print('back2left')
 
         #Temporaire: condition d'arret si la limite de l'arene en x 
-        if self.est_x < 0-THRESHOLD_BACK_X:
+        if self.est_x < 0-self.thresh_back:
             print("Pas de platforme, limite de la box atteinte au retour")
             time.sleep(1)
             self.goal_x=self.est_x
@@ -252,7 +243,7 @@ class Drone():
             self.goal_reached2()
         
         #Temporaire condition de retour basé sur le temps de vol
-        #if(time.time()-self.start_time2>TIME_EXPLORE2):
+        #if(time.time()-self.start_time2>self.time_explore2):
         #    print("arret au retour basé sur le timing")
         #    self.goal_reached2()
 
@@ -300,7 +291,7 @@ class Drone():
             self.goal_reached2()
         
         #Temporaire condition de retour basé sur le temps de vol
-        if(time.time()-self.start_time2>TIME_EXPLOREBOX):
+        if(time.time()-self.start_time2>self.time_explore_box):
             time.sleep(1)
             self.goal_x=self.est_x
             self.goal_y=self.est_y
@@ -442,16 +433,16 @@ class Drone():
         #update flag for using 2 estimation function
         #switch state_zigzag
 
-        self.mc.land(velocity=VELOCITY_LANDING)
+        self.mc.land(velocity=self.vel_landing)
         self.case = self.state_zigzag["arrived"]
         self.landed=1 #used to decide which position estimation function to use
         time.sleep(5)
-        self.mc.take_off(DEFAULT_HEIGHT)
+        self.mc.take_off(velocity=self.vel_takeoff)
         self.clean_takeoff2()
         
     def goal_reached2(self):
         print("final goal reached")
-        self.mc.land(velocity=VELOCITY_LANDING)
+        self.mc.land(velocity=self.vel_landing)
         self.case2 = self.state_zigzag["arrived"]
         self.landed=1 #used to decide which position estimation function to use
         
