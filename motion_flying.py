@@ -228,7 +228,7 @@ def print_config(args):
     print(f"Size of the Arena: {args.arenaX}, {args.arenaY}")
     print(f"Start Position: {args.startX}, {args.startY}")
     print(f"Goal Zone: {args.goal_zone}, Start Zone: {args.start_zone}")
-    print(f"Global velocity: {args.vel}, takeoff: {args.vel_takeoff}, landing: {args.vel_landing}")
+    print(f"takeoff: {args.vel_takeoff}, landing: {args.vel_landing}")
 
 
 # Edge detection functions ---------------------------------------------------------------------------------

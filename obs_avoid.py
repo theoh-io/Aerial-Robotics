@@ -1,13 +1,5 @@
 
 
-# const
-VELOCITY = 0.5
-THRESH_Y = 0.9
-LOW_VELOCITY = 0.05
-MIN_DISTANCE = 0.5  # m
-SAFETY_MARGIN = 2
-SMALL_DIST = 0.2
-EDGE_VELOCITY = 0
 
 #variables
 pos_estimate_before_x = 0
@@ -27,7 +19,7 @@ obstacle_at_back = 0
 
 
 def is_close(range):
-
+    MIN_DISTANCE = 0.5  # m
     if range is None:
         return False
     else:
@@ -47,7 +39,7 @@ def  obstacle_avoid_left_right(multiranger_left, multiranger_right, multiranger_
             pos_estimate_before_x = dronito.est_x #x front/back
             pos_estimate_before_y = dronito.est_y #y left/right
         
-        if (abs(pos_estimate_before_y - (dronito.boxborder_left)) < THRESH_Y): #obstacle very close to y border from left
+        if (abs(pos_estimate_before_y - (dronito.boxborder_left)) < dronito.thresh_y): #obstacle very close to y border from left
             print("too close to border")
             if (dronito.case==dronito.state_zigzag['arrived']):
                 dronito.case2=dronito.state_zigzag["forward1"]
@@ -63,10 +55,10 @@ def  obstacle_avoid_left_right(multiranger_left, multiranger_right, multiranger_
         
         if abs(pos_estimate_before_x) > abs(pos_estimate_before_x - (dronito.boxborder_front )): #back better than front?
             obstacle_at_front = 1
-            dronito.velocity_front = - VELOCITY
+            dronito.velocity_front = - dronito.vel_obst
         else :
             obstacle_at_back = 1
-            dronito.velocity_front = VELOCITY
+            dronito.velocity_front = dronito.vel_obst
         dronito.velocity_left = 0.0
         state_obs= 2
         return True
@@ -81,7 +73,7 @@ def  obstacle_avoid_left_right(multiranger_left, multiranger_right, multiranger_
             pos_estimate_before_x = dronito.est_x
             pos_estimate_before_y = dronito.est_y
         
-        if (abs(pos_estimate_before_y) < THRESH_Y): #obstacle very close to y border from right
+        if (abs(pos_estimate_before_y) < dronito.thresh_y): #obstacle very close to y border from right
             print("too close to border")
             if (dronito.case==dronito.state_zigzag['arrived']):
                 dronito.case2=dronito.state_zigzag["forward2"]
@@ -97,10 +89,10 @@ def  obstacle_avoid_left_right(multiranger_left, multiranger_right, multiranger_
         
         if abs(pos_estimate_before_x) > abs(pos_estimate_before_x - (dronito.boxborder_front)): #back better than front?
             obstacle_at_front = 1
-            dronito.velocity_front = - VELOCITY
+            dronito.velocity_front = - dronito.vel_obst
         else :
             obstacle_at_back = 1
-            dronito.velocity_front = VELOCITY
+            dronito.velocity_front = dronito.vel_obst
         dronito.velocity_left = 0.0
         state_obs= 2
         return True
@@ -109,10 +101,10 @@ def  obstacle_avoid_left_right(multiranger_left, multiranger_right, multiranger_
         print('state_obs=2')
         dronito.velocity_front = 0.0
         if (from_right):
-            dronito.velocity_left = -VELOCITY
+            dronito.velocity_left = -dronito.vel_obst
             #dist = -0.1
         if (from_left):
-            dronito.velocity_left = +VELOCITY 
+            dronito.velocity_left = +dronito.vel_obst 
             #dist = +0.1
         if(obstacle_at_back):
             print('obstacle_at_back')
@@ -121,12 +113,12 @@ def  obstacle_avoid_left_right(multiranger_left, multiranger_right, multiranger_
                 if (not(is_close(multiranger_back))):
                     print('not close back')
                     no_detection = no_detection + 1
-                    if (no_detection >= SAFETY_MARGIN): # for safety
+                    if (no_detection >= dronito.margin): # for safety
                         state_obs= 3
-                        #mc.move_distance(0, dist, 0, VELOCITY)
+                        #mc.move_distance(0, dist, 0, dronito.vel_obst)
             if (is_close(multiranger_back)):
                 first_detection =1
-                dronito.velocity_front = LOW_VELOCITY
+                dronito.velocity_front = dronito.low_vel_obs
         if(obstacle_at_front):
             print('obstacle_at_front')
             if (first_detection):
@@ -134,12 +126,12 @@ def  obstacle_avoid_left_right(multiranger_left, multiranger_right, multiranger_
                 if (not(is_close(multiranger_front))): 
                     print('not close front')
                     no_detection = no_detection + 1
-                    if (no_detection >= SAFETY_MARGIN): # for safety
+                    if (no_detection >= dronito.margin): # for safety
                         state_obs= 3
-                        #mc.move_distance(0, dist, 0, VELOCITY)
+                        #mc.move_distance(0, dist, 0, dronito.vel_obst)
             if (is_close(multiranger_front)):
                 first_detection =1
-                dronito.velocity_front = - LOW_VELOCITY
+                dronito.velocity_front = - dronito.low_vel_obs
                 
         return True
         
@@ -147,19 +139,19 @@ def  obstacle_avoid_left_right(multiranger_left, multiranger_right, multiranger_
         print('state_obs=3')
         dronito.velocity_left = 0
         if abs(pos_estimate_before_x) > abs(pos_estimate_before_x - (dronito.boxborder_front)): #back better than front?
-            dronito.velocity_front = VELOCITY - (VELOCITY - EDGE_VELOCITY)
+            dronito.velocity_front = dronito.vel_obst 
         else :
-            dronito.velocity_front = - VELOCITY + (VELOCITY - EDGE_VELOCITY)
-        if (dronito.est_x < abs(pos_estimate_before_x + SMALL_DIST)):
+            dronito.velocity_front = - dronito.vel_obst 
+        if (dronito.est_x < abs(pos_estimate_before_x + dronito.small_dist)):
             print('fin state_obs3')
             if (is_close(multiranger_right)):
                 ('right close going left')
-                dronito.velocity_left = VELOCITY
+                dronito.velocity_left = dronito.vel_obst
                 dronito.velocity_front = 0
                 return True 
             elif (is_close(multiranger_left)):
                 ('left close going right')
-                dronito.velocity_left = -VELOCITY
+                dronito.velocity_left = -dronito.vel_obst
                 dronito.velocity_front = 0
                 return True
             state_obs= 1
@@ -189,10 +181,10 @@ def  obstacle_avoid_front_back(multiranger_left, multiranger_right, multiranger_
             pos_estimate_before_y = dronito.est_y #y pos left/right
         if abs(pos_estimate_before_y) > abs(pos_estimate_before_y - (dronito.boxborder_left)): # if distance plus grande a droite ? 
             obstacle_at_left =1
-            dronito.velocity_left = - VELOCITY
+            dronito.velocity_left = - dronito.vel_obst
         else :
             obstacle_at_right =1
-            dronito.velocity_left = VELOCITY
+            dronito.velocity_left = dronito.vel_obst
         dronito.velocity_front = 0
         state_obs= 2
         return True
@@ -205,10 +197,10 @@ def  obstacle_avoid_front_back(multiranger_left, multiranger_right, multiranger_
             pos_estimate_before_y = dronito.est_y #y pos left/right
         if (abs(pos_estimate_before_y) > abs(pos_estimate_before_y - dronito.boxborder_left)): # if distance plus grande a droite ? 
             obstacle_at_left = 1
-            dronito.velocity_left = - VELOCITY
+            dronito.velocity_left = - dronito.vel_obst
         else :
             obstacle_at_right =1
-            dronito.velocity_left = VELOCITY
+            dronito.velocity_left = dronito.vel_obst
         dronito.velocity_front = 0
         state_obs= 2
         return True
@@ -217,49 +209,49 @@ def  obstacle_avoid_front_back(multiranger_left, multiranger_right, multiranger_
         print('state_obs=2')
         dronito.velocity_left = 0.0
         if (from_front):
-            dronito.velocity_front = VELOCITY
+            dronito.velocity_front = dronito.vel_obst
             # dist = 0.1
         if (from_back):
-            dronito.velocity_front = -VELOCITY
+            dronito.velocity_front = -dronito.vel_obst
             # dist = -0.1
         if (obstacle_at_left):      
             if (first_detection):
                 if (not(is_close(multiranger_left))): 
                     no_detection = no_detection + 1
-                    if (no_detection >= SAFETY_MARGIN): # for safety
+                    if (no_detection >= dronito.margin): # for safety
                         state_obs= 3
-                        # mc.move_distance(dist, 0, 0, VELOCITY)
+                        # mc.move_distance(dist, 0, 0, dronito.vel_obst)
             if (is_close(multiranger_left)):
                 first_detection =1
-                dronito.velocity_left = - LOW_VELOCITY 
+                dronito.velocity_left = - dronito.low_vel_obs 
         if (obstacle_at_right):      
             if (first_detection):
                 if (not(is_close(multiranger_right))): 
                     no_detection = no_detection + 1
-                    if (no_detection >= SAFETY_MARGIN): # for safety
+                    if (no_detection >= dronito.margin): # for safety
                         state_obs= 3
-                        # mc.move_distance(dist, 0, 0, VELOCITY)
+                        # mc.move_distance(dist, 0, 0, dronito.vel_obst)
             if (is_close(multiranger_right)):
                 first_detection =1
-                dronito.velocity_left = LOW_VELOCITY  
+                dronito.velocity_left = dronito.low_vel_obs  
         return True
         
     if (state_obs== 3): #state_obs3
         print('state_obs=3')
         if (obstacle_at_left):
-            dronito.velocity_left = VELOCITY 
+            dronito.velocity_left = dronito.vel_obst 
         else :
-            dronito.velocity_left = - VELOCITY 
+            dronito.velocity_left = - dronito.vel_obst 
         dronito.velocity_front = 0
-        if (dronito.est_y < abs(pos_estimate_before_y + SMALL_DIST)):
+        if (dronito.est_y < abs(pos_estimate_before_y + dronito.small_dist)):
             print('fin state_obs3')
             if (is_close(multiranger_back)):
                 dronito.velocity_left = 0
-                dronito.velocity_front = VELOCITY
+                dronito.velocity_front = dronito.vel_obst
                 return True
             elif (is_close(multiranger_front)):
                 dronito.velocity_left = 0
-                dronito.velocity_front = -VELOCITY
+                dronito.velocity_front = -dronito.vel_obst
                 return True
             state_obs= 1
             no_detection = 0

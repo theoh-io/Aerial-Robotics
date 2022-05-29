@@ -5,17 +5,20 @@ from drone import Drone
 import matplotlib.pyplot as plt
 import time
 
-VELOCITY_EDGE = 0.2
-VELOCITY_EDGE_GOAL = 0.1
+VELOCITY_EDGE = 0.5 #before 0.2
+VELOCITY_EDGE_GOAL = 0.5 #before 0.1
 DELTA_X = 0.1
 DELTA_Y = 0.25
 #dronito.delta_x
 #dronito.delta_y
 
 
+
 def is_edge(logs):
 
-    MIN_EDGE2 = 50  # mm
+    #MIN_EDGE = 50  # mm for 0.2 Velocity
+    MIN_EDGE = 100
+
     logs_copy2=logs[~np.all(logs == 0, axis=1)]
 
     if len(logs_copy2) > 100:
@@ -29,7 +32,7 @@ def is_edge(logs):
         x1=logs_copy2[len(logs_copy2)-100+idx_1,0]/1000
         y1=logs_copy2[len(logs_copy2)-100+idx_1,1]/1000
 
-        if abs(z_1-z_2) > MIN_EDGE2:
+        if abs(z_1-z_2) > MIN_EDGE:
             print('abs edge 2: ', abs(z_1-z_2))
             #print('z1: ',z_1)
             #print('z2: ',z_2)
