@@ -4,12 +4,12 @@ import time
 # Unit: meter
 DEFAULT_HEIGHT = 0.5 #1
 
-BOX_LIMIT_X = 2 #5
-BOX_LIMIT_Y = 0.7 #3
+BOX_LIMIT_X = 3.5 #5
+BOX_LIMIT_Y = 1.5 #3
 
 #START_POS_X = 0
 #START_POS_Y = 0
-GOAL_ZONE_X= 1
+GOAL_ZONE_X= 1.5
 START_ZONE_X=1
 TIME_EXPLORE=400
 TIME_EXPLORE2=400
@@ -17,6 +17,8 @@ TIME_EXPLOREBOX=10
 #variables needed for obstacle avoidance
 VELOCITY = 0.2
 EPSYLON=0.0001
+#variables for back, to compensate for drift in est x and end of area
+THRESHOLD_BACK_X=0.20 
 
 VELOCITY_LANDING=0.1
 
@@ -207,11 +209,12 @@ class Drone():
 
     def zigzag_back(self):
         print("in zigzag back")
-        print(f"est x : {self.est_x}, dist exp :{self.dist_explore} ")
+        print(f"est x : {self.est_x}, dist exp :{self.dist_explore2} ")
+        print(f"est y : {self.est_y}")
         if self.case2==self.state_zigzag["start"]:
             print('start_zz2')
             self.mc.start_back()
-        if (self.case2==self.state_zigzag["start"] and self.est_x<self.dist_explore) or (self.case2 == self.state_zigzag["back2left"] and self.est_x < self.start_back-self.x_offset):
+        if (self.case2==self.state_zigzag["start"] and self.est_x<self.dist_explore2) or (self.case2 == self.state_zigzag["back2left"] and self.est_x < self.start_back-self.x_offset):
             self.regulate_yaw(0, self.est_yaw)
             self.case2=self.state_zigzag["left"]
             self.mc.start_left()
@@ -222,12 +225,12 @@ class Drone():
             print('forward 1')
             self.start_back=self.est_x
             self.mc.start_back()
-        elif self.case2 == self.state_zigzag["forward1"] and self.est_x < self.start_back-self.x_offset:
+        elif (self.case2 == self.state_zigzag["forward1"] and self.est_x < self.start_back-self.x_offset):
             self.regulate_yaw(0, self.est_yaw)
             self.case2=self.state_zigzag["right"]
             print('right')
             self.mc.start_right()
-        elif self.case2 == self.state_zigzag["right"] and  self.est_y < self.boxborder_right:
+        elif (self.case2 == self.state_zigzag["right"] and  self.est_y < self.boxborder_right):
             self.regulate_yaw(0, self.est_yaw)
             self.case2 = self.state_zigzag["forward2"]
             print('forward 2')
@@ -237,7 +240,7 @@ class Drone():
             print('back2left')
 
         #Temporaire: condition d'arret si la limite de l'arene en x 
-        if self.est_x < 0:
+        if self.est_x < 0-THRESHOLD_BACK_X:
             print("Pas de platforme, limite de la box atteinte au retour")
             time.sleep(1)
             self.goal_x=self.est_x

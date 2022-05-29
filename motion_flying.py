@@ -23,7 +23,6 @@ from cflib.utils.multiranger import Multiranger
 from cflib.crazyflie.syncLogger import SyncLogger
 from cflib.positioning.position_hl_commander import PositionHlCommander
 from obs_avoid import *
-
 from drone import Drone
 
 import edge_detection
@@ -37,8 +36,8 @@ DEFAULT_HEIGHT = 0.5 #1
 FOV_ZRANGER=math.radians(2.1)
 
 
-START_POS_X = 0
-START_POS_Y = 0
+START_POS_X = 0.3
+START_POS_Y = 0.75
 
 THRESH_Y = 0.5
 #variables needed for obstacle avoidance
