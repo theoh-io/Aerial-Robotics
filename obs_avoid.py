@@ -17,7 +17,7 @@ obstacle_at_front = 0
 obstacle_at_back = 0
  
 
-
+# obstacle detection with MIN_DISTANCE to obstacle
 def is_close(range):
     MIN_DISTANCE = 0.5  # m
     if range is None:
@@ -25,21 +25,24 @@ def is_close(range):
     else:
         return range < MIN_DISTANCE
 
-
+# go around obstacles in motion direction detected at left or right.
 def  obstacle_avoid_left_right(multiranger_left, multiranger_right, multiranger_front, multiranger_back, dronito):
     global pos_estimate_before_x, state_obs, first_detection, no_detection, from_left, from_right, pos_estimate_before_y, obstacle_at_front, obstacle_at_back
     
-    if (is_close(multiranger_left) and (not (from_right)) and dronito.case==dronito.state_zigzag['left'] or (dronito.case==dronito.state_zigzag['arrived'] and dronito.case2== dronito.state_zigzag['left'])): #left state 1
+    #left state 1 : smartly go front or back wehen obstacle detected at front
+    if (is_close(multiranger_left) and (not (from_right)) and dronito.case==dronito.state_zigzag['left'] or (dronito.case==dronito.state_zigzag['arrived'] and dronito.case2== dronito.state_zigzag['left'])): 
         print('state_obs=1 left') 
         print(multiranger_left)
         print(is_close(multiranger_left))
         from_left = 1
 
+        #save position when obstacle is first detected 
         if (state_obs==1) :
-            pos_estimate_before_x = dronito.est_x #x front/back
-            pos_estimate_before_y = dronito.est_y #y left/right
+            pos_estimate_before_x = dronito.est_x 
+            pos_estimate_before_y = dronito.est_y 
         
-        if (abs(pos_estimate_before_y - (dronito.boxborder_left)) < dronito.thresh_y): #obstacle very close to y border from left
+        #continue when bstacle very close to y border from left
+        if (abs(pos_estimate_before_y - (dronito.boxborder_left)) < dronito.thresh_y): 
             print("too close to border")
             if (dronito.case==dronito.state_zigzag['arrived']):
                 dronito.case2=dronito.state_zigzag["forward1"]
@@ -52,8 +55,9 @@ def  obstacle_avoid_left_right(multiranger_left, multiranger_right, multiranger_
                 dronito.start_forward=dronito.est_x
                 dronito.mc.start_forward()
             return False  
-        
-        if abs(pos_estimate_before_x) > abs(pos_estimate_before_x - (dronito.boxborder_front )): #back better than front?
+
+        #when back safer than front go back
+        if abs(pos_estimate_before_x) > abs(pos_estimate_before_x - (dronito.boxborder_front )): 
             obstacle_at_front = 1
             dronito.velocity_front = - dronito.vel_obst
         else :
@@ -63,17 +67,20 @@ def  obstacle_avoid_left_right(multiranger_left, multiranger_right, multiranger_
         state_obs= 2
         return True
 
+    #right state 1 : smartly go front or back wehen obstacle detected at front
     if (is_close(multiranger_right)  and (not (from_left)) and dronito.case==dronito.state_zigzag['right'] or (dronito.case==dronito.state_zigzag['arrived'] and dronito.case2== dronito.state_zigzag['right'])): #right state 
         print('state_obs=1 right') 
         print(multiranger_left)
         print(is_close(multiranger_left))
         from_right = 1
         
+        #save position when obstacle is first detected 
         if (state_obs==1) :
             pos_estimate_before_x = dronito.est_x
             pos_estimate_before_y = dronito.est_y
         
-        if (abs(pos_estimate_before_y) < dronito.thresh_y): #obstacle very close to y border from right
+        #obstacle very close to y border from right
+        if (abs(pos_estimate_before_y) < dronito.thresh_y): 
             print("too close to border")
             if (dronito.case==dronito.state_zigzag['arrived']):
                 dronito.case2=dronito.state_zigzag["forward2"]
@@ -86,8 +93,9 @@ def  obstacle_avoid_left_right(multiranger_left, multiranger_right, multiranger_
                 dronito.start_forward=dronito.est_x
                 dronito.mc.start_forward()
             return False  
-        
-        if abs(pos_estimate_before_x) > abs(pos_estimate_before_x - (dronito.boxborder_front)): #back better than front?
+
+        #when back safer than front go back
+        if abs(pos_estimate_before_x) > abs(pos_estimate_before_x - (dronito.boxborder_front)): 
             obstacle_at_front = 1
             dronito.velocity_front = - dronito.vel_obst
         else :
@@ -97,15 +105,16 @@ def  obstacle_avoid_left_right(multiranger_left, multiranger_right, multiranger_
         state_obs= 2
         return True
     
-    if (state_obs== 2): #state_obs2
+    #left/right state 2 : advance in intial motion direction front/back untill obstacle is no more detected around
+    if (state_obs== 2): 
         print('state_obs=2')
         dronito.velocity_front = 0.0
         if (from_right):
             dronito.velocity_left = -dronito.vel_obst
-            #dist = -0.1
+            
         if (from_left):
             dronito.velocity_left = +dronito.vel_obst 
-            #dist = +0.1
+            
         if(obstacle_at_back):
             print('obstacle_at_back')
             if (first_detection):
@@ -115,7 +124,7 @@ def  obstacle_avoid_left_right(multiranger_left, multiranger_right, multiranger_
                     no_detection = no_detection + 1
                     if (no_detection >= dronito.margin): # for safety
                         state_obs= 3
-                        #mc.move_distance(0, dist, 0, dronito.vel_obst)
+                        
             if (is_close(multiranger_back)):
                 first_detection =1
                 dronito.velocity_front = dronito.low_vel_obst
@@ -128,17 +137,18 @@ def  obstacle_avoid_left_right(multiranger_left, multiranger_right, multiranger_
                     no_detection = no_detection + 1
                     if (no_detection >= dronito.margin): # for safety
                         state_obs= 3
-                        #mc.move_distance(0, dist, 0, dronito.vel_obst)
+                        
             if (is_close(multiranger_front)):
                 first_detection =1
                 dronito.velocity_front = - dronito.low_vel_obst
                 
         return True
-        
-    if (state_obs== 3): #state_obs3
+
+    #left/right state 3: when obstacle avoided go front/back untill it's possible to retake intial trajectory     
+    if (state_obs== 3): 
         print('state_obs=3')
         dronito.velocity_left = 0
-        if abs(pos_estimate_before_x) > abs(pos_estimate_before_x - (dronito.boxborder_front)): #back better than front?
+        if abs(pos_estimate_before_x) > abs(pos_estimate_before_x - (dronito.boxborder_front)): 
             dronito.velocity_front = dronito.vel_obst 
         else :
             dronito.velocity_front = - dronito.vel_obst 
@@ -155,6 +165,7 @@ def  obstacle_avoid_left_right(multiranger_left, multiranger_right, multiranger_
                 dronito.velocity_left = -dronito.vel_obst
                 dronito.velocity_front = 0
                 return True
+            # reinitialize all variables
             state_obs= 1
             no_detection = 0
             first_detection = 0
@@ -167,13 +178,14 @@ def  obstacle_avoid_left_right(multiranger_left, multiranger_right, multiranger_
             obstacle_at_back = 0
             obstacle_at_front = 0
             return False
-        return True  #check this indent
+        return True  
     return False
 
+# go around obstacles in motion direction detected at front or back.
 def  obstacle_avoid_front_back(multiranger_left, multiranger_right, multiranger_front, multiranger_back, dronito):
     global pos_estimate_before_y, state_obs, first_detection, no_detection, from_front, from_back, obstacle_at_left, obstacle_at_right
 
-
+    #front state 1 : smartly go left or right when obstacle is detected at front
     if (is_close(multiranger_front) and (not from_back) and (dronito.case==dronito.state_zigzag['forward1'] or dronito.case==dronito.state_zigzag['start'] or dronito.case==dronito.state_zigzag['forward2'] )) :
         print('state_obs=1 front')
         print(multiranger_front)
@@ -190,13 +202,14 @@ def  obstacle_avoid_front_back(multiranger_left, multiranger_right, multiranger_
         state_obs= 2
         return True
 
-    if (is_close(multiranger_back) and (not from_front) and (dronito.case==dronito.state_zigzag['arrived'])): #jamais pour le moment juste arrived
+    #back state 1 : smartly go left or right wehen obstacle is detected at back
+    if (is_close(multiranger_back) and (not from_front) and (dronito.case==dronito.state_zigzag['arrived'])): 
         print('state_obs=1 back')
         from_back = 1
         print(multiranger_back)
         if (state_obs==1) :
             pos_estimate_before_y = dronito.est_y #y pos left/right
-        if (abs(pos_estimate_before_y) > abs(pos_estimate_before_y - dronito.boxborder_left)): # if distance plus grande a droite ? 
+        if (abs(pos_estimate_before_y) > abs(pos_estimate_before_y - dronito.boxborder_left)): 
             obstacle_at_left = 1
             dronito.velocity_left = - dronito.vel_obst
         else :
@@ -206,6 +219,8 @@ def  obstacle_avoid_front_back(multiranger_left, multiranger_right, multiranger_
         state_obs= 2
         return True
     
+
+    #front/back state 2 : advance in intial motion direction front/back untill obstacle is no more detected around
     if (state_obs== 2): #state_obs2
         print('state_obs=2')
         dronito.velocity_left = 0.0
@@ -236,7 +251,8 @@ def  obstacle_avoid_front_back(multiranger_left, multiranger_right, multiranger_
                 first_detection =1
                 dronito.velocity_left = dronito.low_vel_obst  
         return True
-        
+    
+    #front/back state 3: when obstacle avoided go left/right untill it's possible to retake intial trajectory            
     if (state_obs== 3): #state_obs3
         print('state_obs=3')
         if (obstacle_at_left):
@@ -257,6 +273,7 @@ def  obstacle_avoid_front_back(multiranger_left, multiranger_right, multiranger_
                 dronito.velocity_left = 0
                 dronito.velocity_front = -dronito.vel_obst
                 return True
+            # reinitialize all variables
             state_obs= 1
             no_detection = 0
             first_detection = 0
@@ -268,9 +285,10 @@ def  obstacle_avoid_front_back(multiranger_left, multiranger_right, multiranger_
             obstacle_at_right =0
             pos_estimate_before_y =0
             return False
-        return True  #check this indent
+        return True  
     return False
 
+# obstacle avoidance function always called in the while loop : returns true if obtsacle in motion direction  
 def obstacle_avoidance(multiranger_left, multiranger_right, multiranger_front, multiranger_back, dronito):
 
     if ((is_close(multiranger_left) or is_close(multiranger_right) or from_left or from_right) and (from_front ==0) and (from_back == 0)):
