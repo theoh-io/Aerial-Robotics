@@ -292,6 +292,7 @@ if __name__ == '__main__':
                             if not dronito.is_starting():
                                 [dronito.edge,dronito.x_edge,dronito.y_edge] = edge_detection.is_edge(logs,first_edge=True)
                                 if dronito.edge == True:
+                                    #if edge detected, compute the platform center and land on it
                                     edge_detection.find_platform_center(logs,dronito)
                                     dronito.goal_reached()
                             
