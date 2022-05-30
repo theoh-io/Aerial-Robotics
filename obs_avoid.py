@@ -47,12 +47,12 @@ def  obstacle_avoid_left_right(multiranger_left, multiranger_right, multiranger_
             if (dronito.case==dronito.state_zigzag['arrived']):
                 dronito.case2=dronito.state_zigzag["forward1"]
                 from_left = 0
-                dronito.start_forward=dronito.est_x
+                # dronito.start_forward=dronito.est_x
                 # dronito.mc.start_back()
             else:
                 dronito.case=dronito.state_zigzag["forward1"]
                 from_left = 0
-                dronito.start_forward=dronito.est_x
+                # dronito.start_forward=dronito.est_x
                 # dronito.mc.start_forward()
             return False  
 
