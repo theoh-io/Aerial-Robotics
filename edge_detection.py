@@ -8,7 +8,7 @@ import time
 VELOCITY_EDGE = 0.5 #before 0.2
 VELOCITY_EDGE_GOAL = 0.1 #before 0.1
 DELTA_X = 0.1
-DELTA_Y = 0.3  #previously 0.25
+DELTA_Y = 0.25  #previously 0.25
 #dronito.delta_x
 #dronito.delta_y
 

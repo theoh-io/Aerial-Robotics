@@ -77,7 +77,7 @@ class Drone():
         self.vel_obst=args.vel_obst
         self.low_vel_obst=args.low_vel_obst
         self.thresh_y=args.thresh_y
-        self.min_dist=args.min_dist
+        #self.min_dist=args.min_dist
         self.margin=args.margin
         self.small_dist=args.small_dist
         

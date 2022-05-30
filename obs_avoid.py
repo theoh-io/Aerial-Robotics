@@ -142,7 +142,8 @@ def  obstacle_avoid_left_right(multiranger_left, multiranger_right, multiranger_
             dronito.velocity_front = dronito.vel_obst 
         else :
             dronito.velocity_front = - dronito.vel_obst 
-        if (dronito.est_x < abs(pos_estimate_before_x + dronito.small_dist)):
+        print(dronito.est_x, pos_estimate_before_x )
+        if (dronito.est_x > abs(pos_estimate_before_x - dronito.small_dist) and (dronito.est_x < abs(pos_estimate_before_x + dronito.small_dist))):
             print('fin state_obs3')
             if (is_close(multiranger_right)):
                 ('right close going left')
@@ -239,11 +240,14 @@ def  obstacle_avoid_front_back(multiranger_left, multiranger_right, multiranger_
     if (state_obs== 3): #state_obs3
         print('state_obs=3')
         if (obstacle_at_left):
+            print("obstacle_at_left")
             dronito.velocity_left = dronito.vel_obst 
         else :
+            print("obstacle_at_right")
             dronito.velocity_left = - dronito.vel_obst 
         dronito.velocity_front = 0
-        if (dronito.est_y < abs(pos_estimate_before_y + dronito.small_dist)):
+        print(dronito.est_y, pos_estimate_before_y )
+        if ((dronito.est_y > abs(pos_estimate_before_y - dronito.small_dist)) and (dronito.est_y < abs(pos_estimate_before_y + dronito.small_dist))):
             print('fin state_obs3')
             if (is_close(multiranger_back)):
                 dronito.velocity_left = 0
