@@ -11,6 +11,8 @@ def is_edge(logs,first_edge):
 
     logs_copy2=logs[~np.all(logs == 0, axis=1)]
 
+    #look for edge in a window of 100 timesteps by computing the absolute difference between the minimum zranger 
+    # and the maximum zranger 
     if len(logs_copy2) > 100:        
         z_2=np.max(logs_copy2[-100:,3])
         idx_2=np.argmax(logs_copy2[-100:,3])
@@ -33,6 +35,8 @@ def find_platform_center(logs, dronito):
     x1=dronito.x_edge
     y1=dronito.y_edge
     
+    # after first edge detection, start to do the square motion around the platform to find another egde 
+    # on a perpendicular side of the platform
     if dronito.case == dronito.state_zigzag["right"]:
         dronito.mc.right(0.40, velocity=0.4)
         time.sleep(1)
@@ -45,6 +49,7 @@ def find_platform_center(logs, dronito):
     dronito.mc.back(0.45, velocity=0.3)
     time.sleep(1)
 
+    #compute the y coordinate of the center based the first edge detected
     if dronito.case == dronito.state_zigzag["right"]:
         dronito.mc.start_left(velocity=0.3)
         print(y1)
@@ -61,10 +66,10 @@ def find_platform_center(logs, dronito):
             print('going right ',dronito.est_y,' ',y1)
 
     dronito.mc.start_forward(velocity=0.2)
-
     print('going forward')
+    
+    #after reaching the y coordinate of the center, go toward the platform to detect the second edge
     dronito.edge=False
-
     while(dronito.edge == False):
         [dronito.edge,dronito.x_edge,dronito.y_edge]=is_edge(logs,first_edge=False)
         if (dronito.edge==True):
@@ -83,6 +88,7 @@ def find_platform_center(logs, dronito):
             dronito.edge=False
             return
     
+    #compute the x coordinate of the center based the second edge detected and go the center position: (goal_x, goal_y)
     dronito.mc.forward(dronito.delta_x, velocity=dronito.vel_edge_goal)
     #time.sleep(1)
 
