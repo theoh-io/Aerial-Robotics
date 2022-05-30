@@ -163,11 +163,11 @@ def get_args():
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     #General Arguments
-    parser.add_argument('-x', '--arenaX', default='3', type=float,
+    parser.add_argument('-x', '--arenaX', default='3.5', type=float,
                         help='size of the arena in X')
     parser.add_argument('-y', '--arenaY', default='1.2', type=float,
                         help='size of the arena in Y')
-    parser.add_argument('--startX', default='0.3', type=float,
+    parser.add_argument('--startX', default='0.5', type=float,
                         help='start position in X')
     parser.add_argument('--startY', default='0.6', type=float,
                         help='start position in Y')
