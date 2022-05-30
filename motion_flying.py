@@ -166,47 +166,9 @@ def store_log_data():
     filepath = os.path.join(os.getcwd(),'logs',filename)
     np.savetxt(filepath, logs, delimiter=',')
 
-# A* and mapping functions-------------------------------------------------------------------------------------------------------------
-
-# def posestimation_to_grid(position_estimate_x,position_estimate_y):
-#     return (int((position_estimate_x)/RESOLUTION_GRID), int((position_estimate_y)/RESOLUTION_GRID))
-#     #return (int((position_estimate_x+START_POS_X)/RESOLUTION_GRID), int((position_estimate_y+START_POS_Y)/RESOLUTION_GRID))
-
-# def obstacle_mapping(range_left, range_right, range_front, range_back, occupancy_grid, pos_x, pos_y):
-
-#     if(range_front < MIN_DISTANCE_OCCUP_GRIG):
-#         pos_obsf=(pos_x+range_front)
-#         if(pos_obsf>BOX_LIMIT_X-START_POS_X):
-#             print("Obstacle mapped at front")
-#             idx_x,idx_y = posestimation_to_grid(pos_obsf,pos_y)
-#             occupancy_grid[idx_x,idx_y]=1
-        
-#     if(range_back < MIN_DISTANCE_OCCUP_GRIG):
-#         pos_obsb=(pos_x-range_back)
-#         if(pos_obsb<-START_POS_X):
-#             print("Obstacle mapped at back")
-#             idx_x,idx_y = posestimation_to_grid(pos_obsb,pos_y)
-#             occupancy_grid[idx_x,idx_y]=1
-
-#     if(range_left < MIN_DISTANCE_OCCUP_GRIG):
-#         pos_obsl=pos_y+range_left
-#         if(pos_obsl>BOX_LIMIT_Y-START_POS_Y):
-#             print("Obstacle mapped at left")
-#             idx_x,idx_y = posestimation_to_grid(pos_x,pos_obsl)
-#             occupancy_grid[idx_x,idx_y]=1
-
-#     if(range_right < MIN_DISTANCE_OCCUP_GRIG):
-#         pos_obsr=pos_y-range_right
-#         if(pos_obsr<-START_POS_Y):
-#             print("Obstacle mapped at right")
-#             idx_x, idx_y = posestimation_to_grid(pos_x,pos_obsr)
-#             occupancy_grid[idx_x,idx_y]=1
-            
-#     return occupancy_grid
-
 # -------------------------------------------------------------------------------------------------------------
 
-#------------------------------------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------------------------------------
 #Parser function
 def get_args():
     parser = argparse.ArgumentParser(
@@ -227,15 +189,15 @@ def get_args():
                         help='start zone: landing pad inseinde, exploring on way back')
     # parser.add_argument('--vel_takeoff', default='0.6', type=float,
     #                     help='Velocity used for takeoff')
-    # parser.add_argument('--vel_landing', default='0.1', type=float,
-    #                     help='velocity used for landing')
+    parser.add_argument('--vel_landing', default='0.1', type=float,
+                         help='velocity used for landing')
 
     #Obstacle Avoidance Arguments
     parser.add_argument('--vel_obst', default='0.5', type=float,
                         help='Velocity for obstacle avoidance')
     parser.add_argument('--low_vel_obst', default='0.05', type=float,
                         help='threshold pour la distance au mur')
-    parser.add_argument('--thresh_y', default='0.8', type=float,
+    parser.add_argument('--thresh_y', default='1', type=float,
                         help='threshold pour la distance au mur')
     parser.add_argument('--min_dist', default='0.4', type=float,
                         help='min distance for an obstacle to be detected')
@@ -249,8 +211,8 @@ def get_args():
                         help='x distance between the edge detec and the landing')
     parser.add_argument('--delta_y', default='0.25', type=float,
                         help='y distance between the edge detec and the landing')
-    parser.add_argument('--vel_edge', default='0.2', type=float,
-                        help='vel after platform edge det for calib of platform center')
+    # parser.add_argument('--vel_edge', default='0.2', type=float,
+    #                     help='vel after platform edge det for calib of platform center')
     parser.add_argument('--vel_edge_goal', default='0.1', type=float,
                         help='vel after second platform edge det until landing')
 
@@ -280,7 +242,7 @@ def print_config(args):
     print(f"Goal Zone: {args.goal_zone}, Start Zone: {args.start_zone}")
 
 
-# Edge detection functions ---------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------------------------------------
 
 if __name__ == '__main__':
     args=get_args()
@@ -312,37 +274,24 @@ if __name__ == '__main__':
         with MotionCommander(scf, default_height=DEFAULT_HEIGHT) as mc:
             with Multiranger(scf) as multiranger:
                 mc._reset_position_estimator()
-                
                 dronito.mc=mc
 
                 #little sleep needed for takeoff
                 time.sleep(1)
-                
-                #variables needed for global nav
-                #len_x, len_y = (BOX_LIMIT_X, BOX_LIMIT_Y)
-                # occupancy_grid = np.zeros((len_x,len_y))
-                # explored_list = []
 
                 logs = np.zeros([100000,5])
-                #parameter to run the main while
-                freq_main=0.1
+                freq_main=0.1  #parameter to run the main while
 
 
                 while(1):
                     if is_close(multiranger.up):
+                        #safety emergency stopping by putting the hand above the drone
                         mc.land()
                         break
                     if (obstacle_avoidance(multiranger.left, multiranger.right, multiranger.front, multiranger.back, dronito) == False):
+                        
                         #if no obstacle is being detected let zigzag manage the speeds
-                        if not dronito.is_arrived():
-
-                            # #explored list filling
-                            # if not((pos_to_grid(position_estimate[0],position_estimate[1])) in explored_list):
-                            #     explored_list.append(pos_to_grid(position_estimate[0],position_estimate[1]))
-                            # #occupancy_grid filling
-                            # occupancy_grid = obstacle_mapping(multiranger.left, multiranger.right, multiranger.front, multiranger.back, occupancy_grid, position_estimate[0], position_estimate[1])
-                            #print(explored_list)
-                            
+                        if not dronito.is_arrived():                            
                             dronito.zigzag()
                             if not dronito.is_starting():
                                 [dronito.edge,dronito.x_edge,dronito.y_edge] = edge_detection.is_edge(logs,first_edge=True)
@@ -353,7 +302,6 @@ if __name__ == '__main__':
                         else:
                             if not dronito.is_arrived2():
                                 dronito.zigzag_back()
-                                
                                 if not dronito.is_starting2():
                                     [dronito.edge,dronito.x_edge,dronito.y_edge] = edge_detection.is_edge(logs,first_edge=True)
                                     if dronito.edge == True:
@@ -369,6 +317,7 @@ if __name__ == '__main__':
                         print(dronito.velocity_front, dronito.velocity_left)
                         mc.start_linear_motion(dronito.velocity_front, dronito.velocity_left, 0)
                         time.sleep(freq_main)
+        
         #stop logging
         print("in logcong")
         logconf.stop()

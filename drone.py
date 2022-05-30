@@ -11,7 +11,7 @@ class Drone():
         self.mc = mc
         #velocity attributes
         # self.vel_takeoff=args.vel_takeoff
-        # self.vel_landing=args.vel_landing
+        self.vel_landing=args.vel_landing
         #estimation attributes
         self.est_x=0
         self.est_y=0
@@ -68,7 +68,6 @@ class Drone():
         self.y_edge=0
         self.delta_x=args.delta_x
         self.delta_y=args.delta_y
-        self.vel_edge=args.vel_edge
         self.vel_edge_goal=args.vel_edge_goal
 
         #attributes obs avoidance
