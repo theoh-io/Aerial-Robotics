@@ -32,22 +32,19 @@ import edge_detection
 
 URI = uri_helper.uri_from_env(default='radio://0/80/2M/E7E7E7E714')
 
-# Unit: meter
-DEFAULT_HEIGHT = 0.5 #1
+# Fixed Constants: Unit= meter
+DEFAULT_HEIGHT = 0.5
 VELOCITY=0.5
 VELOCITY_TAKEOFF=0.6
 VELOCITY_LANDING=0.1
 
+#STILL USED ?
 FOV_ZRANGER=math.radians(2.1)
-
 RESOLUTION_GRID=0.20 # m
 MIN_DISTANCE_OCCUP_GRIG = 3  # m
 
 EPSYLON=0.001
 
-#to be added in parser
-verbose = True
-#state_zigzag={'start':-1, 'left':0, 'forward1':1, 'right':2, 'forward2':3, 'back2left':4, 'arrived':5}
 
 deck_attached_event = Event()
 
@@ -55,11 +52,11 @@ deck_attached_event = Event()
 logging.basicConfig(level=logging.ERROR)
 
 # Logs global variables
-#position_estimate = [0, 0, 0, 0, 0]
 logs = np.zeros([100000,5])
 count = 0
 
 # Edge detection global variables
+#STILL USED ?
 edge = False
 x_edge= 0.0
 y_edge= 0.0
@@ -76,12 +73,6 @@ def param_deck_flow(_, value_str):
 #Overwriting the MotionCommander class to change velocities
 class MotionCommander(MotionCommander):
     def __init__(self, crazyflie, default_height=DEFAULT_HEIGHT, default_vel=VELOCITY):
-        """
-        Construct an instance of a MotionCommander
-
-        :param crazyflie: A Crazyflie or SyncCrazyflie instance
-        :param default_height: The default height to fly at
-        """
         if isinstance(crazyflie, SyncCrazyflie):
             self._cf = crazyflie.cf
         else:
@@ -94,16 +85,6 @@ class MotionCommander(MotionCommander):
         self._thread = None
 
     def take_off(self, height=DEFAULT_HEIGHT, velocity=VELOCITY_TAKEOFF):
-        """
-        Takes off, that is starts the motors, goes straight up and hovers.
-        Do not call this function if you use the with keyword. Take off is
-        done automatically when the context is created.
-
-        :param height: The height (meters) to hover at. None uses the default
-                       height set when constructed.
-        :param velocity: The velocity (meters/second) when taking off
-        :return:
-        """
         if self._is_flying:
             raise Exception('Already flying')
 
@@ -122,15 +103,6 @@ class MotionCommander(MotionCommander):
         self.up(height, velocity)
     
     def land(self, velocity=VELOCITY_LANDING):
-        """
-        Go straight down and turn off the motors.
-
-        Do not call this function if you use the with keyword. Landing is
-        done automatically when the context goes out of scope.
-
-        :param velocity: The velocity (meters/second) when going down
-        :return:
-        """
         if self._is_flying:
             self.down(self._thread.get_height(), velocity)
 
@@ -175,9 +147,7 @@ def log_pos_callback(timestamp, data, logconf):
 
 def stab_log_data(timestamp, data, logconf):
     """Callback from the log API when data arrives"""
-    #print('[%d][%s]: %s' % (timestamp, logconf.name, data))
-    global count
-    global dronito
+    global count, dronito
     data_drone=[dronito.est_x, dronito.est_y, dronito.est_z, dronito.z_range, dronito.est_yaw]
     # Save info into log variable
     for idx in range(len(data_drone)):
@@ -199,7 +169,7 @@ def store_log_data():
     filepath = os.path.join(os.getcwd(),'logs',filename)
     np.savetxt(filepath, logs, delimiter=',')
 
-# -------------------------------------------------------------------------------------------------------------
+# A* and mapping functions-------------------------------------------------------------------------------------------------------------
 
 # def posestimation_to_grid(position_estimate_x,position_estimate_y):
 #     return (int((position_estimate_x)/RESOLUTION_GRID), int((position_estimate_y)/RESOLUTION_GRID))
@@ -258,10 +228,10 @@ def get_args():
                         help='goal zone: landing pad inside, to start exploring')
     parser.add_argument('--start_zone', default='1', type=float,
                         help='start zone: landing pad inseinde, exploring on way back')
-    parser.add_argument('--vel_takeoff', default='0.6', type=float,
-                        help='Velocity used for takeoff')
-    parser.add_argument('--vel_landing', default='0.1', type=float,
-                        help='velocity used for landing')
+    # parser.add_argument('--vel_takeoff', default='0.6', type=float,
+    #                     help='Velocity used for takeoff')
+    # parser.add_argument('--vel_landing', default='0.1', type=float,
+    #                     help='velocity used for landing')
 
     #Obstacle Avoidance Arguments
     parser.add_argument('--vel_obst', default='0.5', type=float,
@@ -311,7 +281,6 @@ def print_config(args):
     print(f"Size of the Arena: {args.arenaX}, {args.arenaY}")
     print(f"Start Position: {args.startX}, {args.startY}")
     print(f"Goal Zone: {args.goal_zone}, Start Zone: {args.start_zone}")
-    print(f"takeoff: {args.vel_takeoff}, landing: {args.vel_landing}")
 
 
 # Edge detection functions ---------------------------------------------------------------------------------
@@ -320,11 +289,6 @@ if __name__ == '__main__':
     args=get_args()
     print_config(args)
 
-    # arena_dim=[args.arenaX, args.arenaY, args.goal_zone, args.start_zone]
-    # start_pos=[args.startX, args.startY]
-    # args_vel=[args.vel, args.vel_takeoff, args.vel_landing]
-    # args_drone=[args.x_offset, args.box_x, args]
-    # args_drone=[args.arenaX, args.arenaY, args.startX, args.startY, args.goal_zone, args.start_zone, args.vel, args.vel_takeoff, args.vel_landing]
     cflib.crtp.init_drivers()
     with SyncCrazyflie(URI, cf=Crazyflie(rw_cache='./cache')) as scf:
 
@@ -333,10 +297,6 @@ if __name__ == '__main__':
         #want to know if the flow deck is correctly attached before flying,
         scf.cf.param.add_update_callback(group="deck", name="bcFlow2",
                                          cb=param_deck_flow)
-        #or
-        # if not deck_attached_event.wait(timeout=5):
-        #     print('No flow deck detected!')
-        #     sys.exit(1)
 
         logconf = LogConfig(name='Position', period_in_ms=10)
         logconf.add_variable('stateEstimate.x', 'float')
@@ -366,11 +326,6 @@ if __name__ == '__main__':
                 # occupancy_grid = np.zeros((len_x,len_y))
                 # explored_list = []
 
-                
-                #temporary intentional disturbance to regulate yaw
-                #time.sleep(1)
-                #mc.turn_left(7)
-                #dronito.clean_takeoff()
                 logs = np.zeros([100000,5])
                 #parameter to run the main while
                 freq_main=0.1
@@ -380,7 +335,6 @@ if __name__ == '__main__':
                     if is_close(multiranger.up):
                         mc.land()
                         break
-                    #print(obstacle_avoidance())
                     if (obstacle_avoidance(multiranger.left, multiranger.right, multiranger.front, multiranger.back, dronito) == False):
                         #if no obstacle is being detected let zigzag manage the speeds
                         if not dronito.is_arrived():
@@ -395,14 +349,11 @@ if __name__ == '__main__':
                             dronito.zigzag()
                             if not dronito.is_starting():
                                 [dronito.edge,dronito.x_edge,dronito.y_edge] = edge_detection.is_edge(logs,first_edge=True)
-                                #dronito.edge = False ## to remove
                                 if dronito.edge == True:
                                     edge_detection.find_platform_center(logs,dronito)
                                     dronito.goal_reached()
                             
                         else:
-                            # print("here!!!")
-
                             if not dronito.is_arrived2():
                                 dronito.zigzag_back()
                                 
