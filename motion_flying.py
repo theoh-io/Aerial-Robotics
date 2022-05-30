@@ -211,8 +211,6 @@ def get_args():
                         help='x distance between the edge detec and the landing')
     parser.add_argument('--delta_y', default='0.25', type=float,
                         help='y distance between the edge detec and the landing')
-    # parser.add_argument('--vel_edge', default='0.2', type=float,
-    #                     help='vel after platform edge det for calib of platform center')
     parser.add_argument('--vel_edge_goal', default='0.1', type=float,
                         help='vel after second platform edge det until landing')
 
