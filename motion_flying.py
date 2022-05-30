@@ -163,7 +163,7 @@ def get_args():
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     #General Arguments
-    parser.add_argument('-x', '--arenaX', default='3.5', type=float,
+    parser.add_argument('-x', '--arenaX', default='4', type=float,
                         help='size of the arena in X')
     parser.add_argument('-y', '--arenaY', default='1.2', type=float,
                         help='size of the arena in Y')
@@ -173,7 +173,7 @@ def get_args():
                         help='start position in Y')
     parser.add_argument('--goal_zone', default='2', type=float,
                         help='goal zone: landing pad inside, to start exploring')
-    parser.add_argument('--start_zone', default='1', type=float,
+    parser.add_argument('--start_zone', default='1.2', type=float,
                         help='start zone: landing pad inseinde, exploring on way back')
     parser.add_argument('--vel_takeoff', default='0.6', type=float,
                         help='Velocity used for takeoff')
@@ -205,7 +205,7 @@ def get_args():
                         help='vel after second platform edge det until landing')
 
     #ZigZag Arguments
-    parser.add_argument('--x_offset', default='0.25', type=float,
+    parser.add_argument('--x_offset', default='0.20', type=float,
                         help='offset used in zigzag')
     parser.add_argument('--box_x', default='0.2', type=float,
                         help='x dim for box used in zigzagbox')

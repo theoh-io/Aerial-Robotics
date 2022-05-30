@@ -81,8 +81,7 @@ def find_platform_center(logs, dronito):
         time.sleep(1)
     
     #logs = np.zeros([100000,4])
-    dronito.mc.back(0.4, velocity=0.3)
-
+    dronito.mc.back(0.45, velocity=0.3)
     time.sleep(1)
 
     if dronito.case == dronito.state_zigzag["right"]:
@@ -210,25 +209,25 @@ def find_platform_center2(logs, dronito):
     if dronito.case2 == dronito.state_zigzag["right"]:
         dronito.mc.right(0.4, velocity=0.4)
         time.sleep(1)
-        dronito.mc.forward(0.4, velocity=0.3)
+        dronito.mc.forward(0.45, velocity=0.3)
         time.sleep(1)
 
     if dronito.case2 == dronito.state_zigzag["left"]:
         dronito.mc.left(0.4, velocity=0.4)
         time.sleep(1)
-        dronito.mc.forward(0.4, velocity=0.3)
+        dronito.mc.forward(0.45, velocity=0.3)
         time.sleep(1)
     
     if (dronito.case2 == dronito.state_zigzag["forward1"]) or (dronito.case2 == dronito.state_zigzag["forward2"]):
         dronito.mc.back(0.4, velocity=0.4)
         time.sleep(1)
-        dronito.mc.left(0.4, velocity=0.3)
+        dronito.mc.left(0.45, velocity=0.3)
         time.sleep(1)
     
     #logs = np.zeros([100000,4])
 
     if dronito.case2 == dronito.state_zigzag["right"]:
-        dronito.mc.start_left(velocity=0.2)
+        dronito.mc.start_left(velocity=0.3)
         print(y1)
         print(dronito.est_y)
 
@@ -245,7 +244,7 @@ def find_platform_center2(logs, dronito):
         dronito.edge=False
 
     if dronito.case2 == dronito.state_zigzag["left"]:
-        dronito.mc.start_right(velocity=0.2)
+        dronito.mc.start_right(velocity=0.3)
         print(y1)
         print(dronito.est_y)
         while(dronito.est_y>y1+DELTA_Y):
@@ -260,7 +259,7 @@ def find_platform_center2(logs, dronito):
         dronito.edge=False
 
     if (dronito.case2 == dronito.state_zigzag["forward1"]) or (dronito.case2 == dronito.state_zigzag["forward2"]):
-        dronito.mc.start_forward(velocity=0.2)
+        dronito.mc.start_forward(velocity=0.3)
         print(x1)
         print(dronito.est_x)
         while(dronito.est_x<x1-DELTA_Y):
