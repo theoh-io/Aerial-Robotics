@@ -163,17 +163,17 @@ def get_args():
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     #General Arguments
-    parser.add_argument('-x', '--arenaX', default='4', type=float,
+    parser.add_argument('-x', '--arenaX', default='5', type=float,
                         help='size of the arena in X')
-    parser.add_argument('-y', '--arenaY', default='1.2', type=float,
+    parser.add_argument('-y', '--arenaY', default='2.4', type=float,
                         help='size of the arena in Y')
-    parser.add_argument('--startX', default='0.5', type=float,
+    parser.add_argument('--startX', default='1', type=float,
                         help='start position in X')
-    parser.add_argument('--startY', default='0.6', type=float,
+    parser.add_argument('--startY', default='2', type=float,
                         help='start position in Y')
-    parser.add_argument('--goal_zone', default='2', type=float,
+    parser.add_argument('--goal_zone', default='3.5', type=float,
                         help='goal zone: landing pad inside, to start exploring')
-    parser.add_argument('--start_zone', default='1.2', type=float,
+    parser.add_argument('--start_zone', default='1.5', type=float,
                         help='start zone: landing pad inseinde, exploring on way back')
     parser.add_argument('--vel_takeoff', default='0.6', type=float,
                         help='Velocity used for takeoff')
@@ -185,13 +185,13 @@ def get_args():
                         help='Velocity for obstacle avoidance')
     parser.add_argument('--low_vel_obst', default='0.05', type=float,
                         help='threshold pour la distance au mur')
-    parser.add_argument('--thresh_y', default='0.9', type=float,
+    parser.add_argument('--thresh_y', default='0.5', type=float,
                         help='threshold pour la distance au mur')
-    parser.add_argument('--min_dist', default='0.5', type=float,
+    parser.add_argument('--min_dist', default='0.4', type=float,
                         help='min distance for an obstacle to be detected')
     parser.add_argument('--margin', default='2', type=int,
                         help='safety margin for no detection before switching obst_avoid cases')
-    parser.add_argument('--small_dist', default='0.4', type=float,
+    parser.add_argument('--small_dist', default='0.03', type=float,
                         help='Rayon de tolérance pour avoir fini de contourner l obstacle  /!\ a tune en fonction de la vitesse')
     
     #Edge Detection Arguments

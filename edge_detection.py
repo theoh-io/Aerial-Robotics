@@ -139,7 +139,7 @@ def find_platform_center(logs, dronito):
             plt.savefig('first edge & second edge')
             """
             
-        if dronito.est_x > dronito.boxborder_front - dronito.start_x:
+        if dronito.est_x > dronito.boxborder_front:
             print("No center found, limite arene x reached, let's land for safety")
             dronito.goal_x=dronito.est_x
             dronito.goal_y=dronito.est_y
@@ -300,7 +300,7 @@ def find_platform_center2(logs, dronito):
             plt.savefig('first edge & second edge')
             """
             
-        if dronito.est_x > dronito.boxborder_front - dronito.start_x:
+        if dronito.est_x > dronito.boxborder_front:
             print("No center found, limite arene x reached, let's land for safety")
             dronito.goal_x=dronito.est_x
             dronito.goal_y=dronito.est_y
