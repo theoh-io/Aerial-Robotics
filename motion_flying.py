@@ -187,8 +187,6 @@ def get_args():
                         help='goal zone: landing pad inside, to start exploring')
     parser.add_argument('--start_zone', default='1.5', type=float,
                         help='start zone: landing pad inseinde, exploring on way back')
-    # parser.add_argument('--vel_takeoff', default='0.6', type=float,
-    #                     help='Velocity used for takeoff')
     parser.add_argument('--vel_landing', default='0.1', type=float,
                          help='velocity used for landing')
 
@@ -197,7 +195,7 @@ def get_args():
                         help='Velocity for obstacle avoidance')
     parser.add_argument('--low_vel_obst', default='0.05', type=float,
                         help='threshold pour la distance au mur')
-    parser.add_argument('--thresh_y', default='1', type=float,
+    parser.add_argument('--thresh_y', default='1.5', type=float,
                         help='threshold pour la distance au mur')
     parser.add_argument('--min_dist', default='0.4', type=float,
                         help='min distance for an obstacle to be detected')

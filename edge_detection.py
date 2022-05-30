@@ -1,20 +1,13 @@
 import numpy as np
-import cflib.crtp
-from cflib.positioning.motion_commander import MotionCommander
-from drone import Drone
 import matplotlib.pyplot as plt
 import time
-
-#VELOCITY_EDGE_GOAL = 0.1 #before 0.1
-#DELTA_X = 0.1
-#DELTA_Y = 0.25 
 
 def is_edge(logs,first_edge):
 
     if first_edge == True:
-        MIN_EDGE = 140  #in mm for Velocity=0.5
+        MIN_EDGE = 140  #in mm for Velocity=0.5 when arriving at first edge
     else:
-        MIN_EDGE= 50    #in mm for Velocity=0.2
+        MIN_EDGE= 50    #in mm for Velocity=0.2 when arriving at second edge
 
     logs_copy2=logs[~np.all(logs == 0, axis=1)]
 
@@ -68,7 +61,6 @@ def find_platform_center(logs, dronito):
             print('going right ',dronito.est_y,' ',y1)
 
     dronito.mc.start_forward(velocity=0.2)
-
 
     print('going forward')
     dronito.edge=False
@@ -236,9 +228,8 @@ def find_platform_center2(logs, dronito):
     plt.figure()
     plt.axis('equal')
     plt.plot(logs[:,0]/1000,logs[:,1]/1000)
-    plt.scatter([x1,x2_before,x2,x0,dronito.goal_x],[y1,y2_before,y2,y0,dronito.goal_y])
+    plt.scatter([x1,x2,x0,dronito.goal_x],[y1,y2,y0,dronito.goal_y])
     plt.annotate('x1',(x1,y1))
-    plt.annotate('x2_before',(x2_before,y2_before))
     plt.annotate('x2',(x2,y2))
     plt.annotate('x0',(x0,y0))
     plt.annotate('goal',(dronito.goal_x,dronito.goal_y))
