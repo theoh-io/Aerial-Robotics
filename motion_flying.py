@@ -19,11 +19,11 @@ import cflib.crtp
 from cflib.crazyflie import Crazyflie
 from cflib.crazyflie.log import LogConfig
 from cflib.crazyflie.syncCrazyflie import SyncCrazyflie
-from cflib.positioning.motion_commander import MotionCommander
+from cflib.positioning.motion_commander import MotionCommander, _SetPointThread
 from cflib.utils import uri_helper
 from cflib.utils.multiranger import Multiranger  
-from cflib.crazyflie.syncLogger import SyncLogger
-from cflib.positioning.position_hl_commander import PositionHlCommander
+#from cflib.crazyflie.syncLogger import SyncLogger
+#from cflib.positioning.position_hl_commander import PositionHlCommander
 from obs_avoid import *
 from drone import Drone
 
@@ -34,6 +34,9 @@ URI = uri_helper.uri_from_env(default='radio://0/80/2M/E7E7E7E714')
 
 # Unit: meter
 DEFAULT_HEIGHT = 0.5 #1
+VELOCITY=0.5
+VELOCITY_TAKEOFF=0.6
+VELOCITY_LANDING=0.1
 
 FOV_ZRANGER=math.radians(2.1)
 
@@ -69,6 +72,86 @@ def param_deck_flow(_, value_str):
         print('Deck is attached!')
     else:
         print('Deck is NOT attached!')
+
+#Overwriting the MotionCommander class to change velocities
+class MotionCommander(MotionCommander):
+    def __init__(self, crazyflie, default_height=DEFAULT_HEIGHT, default_vel=VELOCITY):
+        """
+        Construct an instance of a MotionCommander
+
+        :param crazyflie: A Crazyflie or SyncCrazyflie instance
+        :param default_height: The default height to fly at
+        """
+        if isinstance(crazyflie, SyncCrazyflie):
+            self._cf = crazyflie.cf
+        else:
+            self._cf = crazyflie
+
+        self.default_height = default_height
+        self.velocity=default_vel
+
+        self._is_flying = False
+        self._thread = None
+
+    def take_off(self, height=DEFAULT_HEIGHT, velocity=VELOCITY_TAKEOFF):
+        """
+        Takes off, that is starts the motors, goes straight up and hovers.
+        Do not call this function if you use the with keyword. Take off is
+        done automatically when the context is created.
+
+        :param height: The height (meters) to hover at. None uses the default
+                       height set when constructed.
+        :param velocity: The velocity (meters/second) when taking off
+        :return:
+        """
+        if self._is_flying:
+            raise Exception('Already flying')
+
+        if not self._cf.is_connected():
+            raise Exception('Crazyflie is not connected')
+
+        self._is_flying = True
+        self._reset_position_estimator()
+
+        self._thread = _SetPointThread(self._cf)
+        self._thread.start()
+
+        if height is None:
+            height = self.default_heightd
+
+        self.up(height, velocity)
+    
+    def land(self, velocity=VELOCITY_LANDING):
+        """
+        Go straight down and turn off the motors.
+
+        Do not call this function if you use the with keyword. Landing is
+        done automatically when the context goes out of scope.
+
+        :param velocity: The velocity (meters/second) when going down
+        :return:
+        """
+        if self._is_flying:
+            self.down(self._thread.get_height(), velocity)
+
+            self._thread.stop()
+            self._thread = None
+
+            self._cf.commander.send_stop_setpoint()
+            self._is_flying = False
+
+    def start_left(self, velocity=VELOCITY):
+        self.start_linear_motion(0.0, velocity, 0.0)
+
+    def start_right(self, velocity=VELOCITY):
+        self.start_linear_motion(0.0, -velocity, 0.0)
+
+    def start_forward(self, velocity=VELOCITY):
+        self.start_linear_motion(velocity, 0.0, 0.0)
+
+    def start_back(self, velocity=VELOCITY):
+        self.start_linear_motion(-velocity, 0.0, 0.0)
+
 
 
 # Logs functions -------------------------------------------------------------------------------------------
