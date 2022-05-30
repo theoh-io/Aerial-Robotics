@@ -48,12 +48,12 @@ def  obstacle_avoid_left_right(multiranger_left, multiranger_right, multiranger_
                 dronito.case2=dronito.state_zigzag["forward1"]
                 from_left = 0
                 dronito.start_forward=dronito.est_x
-                dronito.mc.start_back()
+                # dronito.mc.start_back()
             else:
                 dronito.case=dronito.state_zigzag["forward1"]
                 from_left = 0
                 dronito.start_forward=dronito.est_x
-                dronito.mc.start_forward()
+                # dronito.mc.start_forward()
             return False  
 
         #when back safer than front go back
@@ -86,12 +86,12 @@ def  obstacle_avoid_left_right(multiranger_left, multiranger_right, multiranger_
                 dronito.case2=dronito.state_zigzag["forward2"]
                 from_right = 0
                 dronito.start_forward=dronito.est_x
-                dronito.mc.start_back()
+                # dronito.mc.start_back()
             else:
                 dronito.case=dronito.state_zigzag["forward2"]
                 from_right = 0
                 dronito.start_forward=dronito.est_x
-                dronito.mc.start_forward()
+                # dronito.mc.start_forward()
             return False  
 
         #when back safer than front go back
