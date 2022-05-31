@@ -42,21 +42,21 @@ def  obstacle_avoid_left_right(multiranger_left, multiranger_right, multiranger_
             pos_estimate_before_y = dronito.est_y 
         
         #continue when bstacle very close to y border from left
-        # if (abs(pos_estimate_before_y - (dronito.boxborder_left)) < dronito.thresh_y): 
-        #     print("too close to border")
-        #     if (dronito.case==dronito.state_zigzag['arrived']):
-        #         dronito.case2=dronito.state_zigzag["forward1"]
-        #         from_left = 0
-        #         # dronito.start_forward=dronito.est_x
-        #         # dronito.mc.start_back()
-        #         return False
-        #     else:
-        #         dronito.case=dronito.state_zigzag["forward1"]
-        #         from_left = 0
-        #         # dronito.start_forward=dronito.est_x
-        #         # dronito.mc.start_forward()
-        #         return False
-        #     return False  
+        if (abs(pos_estimate_before_y - (dronito.boxborder_left)) < dronito.thresh_y): 
+            print("too close to border")
+            if (dronito.case==dronito.state_zigzag['arrived']):
+                dronito.case2=dronito.state_zigzag["forward1"]
+                from_left = 0
+                dronito.start_back=dronito.est_x
+                dronito.mc.start_back()
+                return False
+            else:
+                dronito.case=dronito.state_zigzag["forward1"]
+                from_left = 0
+                dronito.start_forward=dronito.est_x
+                dronito.mc.start_forward(dronito.x_offset)
+                return False
+            return False  
 
         #when back safer than front go back
         if abs(pos_estimate_before_x) > abs(pos_estimate_before_x - (dronito.boxborder_front )): 
@@ -82,21 +82,24 @@ def  obstacle_avoid_left_right(multiranger_left, multiranger_right, multiranger_
             pos_estimate_before_y = dronito.est_y
         
         #obstacle very close to y border from right
-        # if (abs(pos_estimate_before_y) < dronito.thresh_y): 
-        #     print("too close to border")
-        #     if (dronito.case==dronito.state_zigzag['arrived']):
-        #         dronito.case2=dronito.state_zigzag["forward2"]
-        #         from_right = 0
-        #         dronito.start_forward=dronito.est_x
-        #         # dronito.mc.start_back()
-        #         return False
-        #     else:
-        #         dronito.case=dronito.state_zigzag["forward2"]
-        #         from_right = 0
-        #         dronito.start_forward=dronito.est_x
-        #         # dronito.mc.start_forward()
-        #         return False
-        #     return False  
+        if (abs(pos_estimate_before_y) < dronito.thresh_y): 
+            print("too close to border")
+            if (dronito.case==dronito.state_zigzag['arrived']):
+                dronito.case2=dronito.state_zigzag["forward2"]
+                from_right = 0
+                dronito.start_back=dronito.est_x
+                dronito.mc.start_back()
+                dronito.case=dronito.state_zigzag["back2left"]
+                return False
+            else:
+                dronito.case=dronito.state_zigzag["forward2"]
+                from_right = 0
+                dronito.start_forward=dronito.est_x
+                dronito.mc.start_forward()
+                #print('forward 2')
+                dronito.case=dronito.state_zigzag["back2left"]
+                return False
+            return False  
 
         #when back safer than front go back
         if abs(pos_estimate_before_x) > abs(pos_estimate_before_x - (dronito.boxborder_front)): 
